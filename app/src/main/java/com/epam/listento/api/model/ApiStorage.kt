@@ -5,8 +5,8 @@ import org.simpleframework.xml.Root
 
 @Root(name = "download-info", strict = false)
 data class ApiStorage @JvmOverloads constructor(
-    @field:Element(name = "host") var host: String = "",
-    @field:Element(name = "path") var path: String = "",
-    @field:Element(name = "ts") var ts: String = "",
-    @field:Element(name = "s") var s: String = ""
+    @field:Element(name = "host") val host: String = "",
+    @field:Element(name = "path") val path: String = "",
+    @field:Element(name = "ts") val ts: String = "",
+    @field:Element(name = "s") val s: String = ""
 )

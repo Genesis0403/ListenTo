@@ -1,7 +1,8 @@
 package com.epam.listento.api
 
 enum class Status {
-    LOADING, SUCCESS, ERROR;
+    SUCCESS, ERROR;
 
-    fun isLoading() = this == LOADING
+    fun isSuccsess() = this == SUCCESS
+    fun isError() = this == ERROR
 }
