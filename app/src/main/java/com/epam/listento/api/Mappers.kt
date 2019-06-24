@@ -8,14 +8,14 @@ import com.epam.listento.model.Artist
 import com.epam.listento.model.Track
 import java.util.concurrent.TimeUnit
 
-fun mapTrack(track: ApiTrack): Track {
+fun mapTrack(track: ApiTrack?): Track {
     return Track(
-        track.id ?: 0,
-        durationMapper(track.durationMs ?: 0),
-        track.title ?: "N/A",
-        mapArtist(track.artists?.firstOrNull()),
-        track.storageDir ?: "",
-        mapAlbum(track.albums?.firstOrNull())
+        track?.id ?: 0,
+        durationMapper(track?.durationMs ?: 0),
+        track?.title ?: "N/A",
+        mapArtist(track?.artists?.firstOrNull()),
+        track?.storageDir ?: "",
+        mapAlbum(track?.albums?.firstOrNull())
     )
 }
 
@@ -31,15 +31,17 @@ fun mapAlbum(album: ApiAlbum?): Album {
     )
 }
 
-fun mapArtist(artist: ApiArtist?): Artist {
-    val listCover = mapUrl(artist?.uri ?: "", "100x100")
-    val albumCover = mapUrl(artist?.uri ?: "", "700x700")
-    return Artist(
-        artist?.id ?: 0,
-        listCover,
-        albumCover,
-        artist?.name ?: "N/A"
-    )
+fun mapArtist(artist: ApiArtist?): Artist? {
+    return artist?.let {
+        val thumbnailUrl = mapUrl(artist.uri ?: "", "100x100")
+        val coverUrl = mapUrl(artist.uri ?: "", "700x700")
+        return Artist(
+            artist.id,
+            thumbnailUrl,
+            coverUrl,
+            artist.name ?: "N/A"
+        )
+    }
 }
 
 private fun mapUrl(url: String, replacement: String): String {

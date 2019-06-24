@@ -8,6 +8,5 @@ class ApiResponse<T>(
     companion object {
         fun <T> success(body: T?) = ApiResponse(Status.SUCCESS, body, null)
         fun <T> error(error: String) = ApiResponse<T>(Status.ERROR, null, error)
-        fun <T> loading() = ApiResponse<T>(Status.LOADING, null, null)
     }
 }
