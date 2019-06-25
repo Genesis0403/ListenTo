@@ -39,7 +39,7 @@ fun mapArtist(artist: ApiArtist?): Artist? {
     return artist?.let {
         val thumbnailUrl = mapUrl(artist.uri ?: "", "100x100")
         val coverUrl = mapUrl(artist.uri ?: "", "700x700")
-        return Artist(
+        Artist(
             artist.id,
             thumbnailUrl,
             coverUrl,

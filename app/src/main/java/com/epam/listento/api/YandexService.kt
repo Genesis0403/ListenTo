@@ -1,7 +1,7 @@
 package com.epam.listento.api
 
 import com.epam.listento.api.model.ApiStorage
-import com.epam.listento.api.model.SearchRequest
+import com.epam.listento.api.model.TracksRequest
 import com.epam.listento.utils.Json
 import com.epam.listento.utils.Xml
 import retrofit2.Response
@@ -12,11 +12,10 @@ import retrofit2.http.Query
 interface YandexService {
 
     @Json
-    @GET("music-search.jsx")
-    suspend fun search(
-        @Query("text") text: String,
-        @Query("type") type: String
-    ): Response<SearchRequest>
+    @GET("music-search.jsx?type=track")
+    suspend fun searchTracks(
+        @Query("text") type: String
+    ): Response<TracksRequest>
 
     @Xml
     @GET("http://storage.mds.yandex.net/download-info/{storageDir}/2")
