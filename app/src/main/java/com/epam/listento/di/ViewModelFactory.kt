@@ -10,7 +10,7 @@ class ViewModelFactory @Inject constructor(
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
         val provider = viewModels[modelClass]
-            ?: throw IllegalArgumentException("Class $modelClass no found")
+            ?: throw IllegalArgumentException("Class $modelClass not found")
         return provider.get() as T
     }
 }
