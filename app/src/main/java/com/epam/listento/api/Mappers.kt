@@ -1,14 +1,14 @@
 package com.epam.listento.api
 
-import com.epam.listento.api.model.ApiAlbum
-import com.epam.listento.api.model.ApiArtist
-import com.epam.listento.api.model.ApiTrack
+import com.epam.listento.domain.DomainAlbum
+import com.epam.listento.domain.DomainArtist
+import com.epam.listento.domain.DomainTrack
 import com.epam.listento.model.Album
 import com.epam.listento.model.Artist
 import com.epam.listento.model.Track
 import java.util.concurrent.TimeUnit
 
-fun mapTrack(track: ApiTrack?): Track? {
+fun mapTrack(track: DomainTrack?): Track? {
     return track?.let {
         Track(
             track.id,
@@ -21,7 +21,7 @@ fun mapTrack(track: ApiTrack?): Track? {
     }
 }
 
-fun mapAlbum(album: ApiAlbum?): Album? {
+fun mapAlbum(album: DomainAlbum?): Album? {
     return album?.let {
         val listCover = mapUrl(album.coverUri ?: "", "100x100")
         val albumCover = mapUrl(album.coverUri ?: "", "700x700")
@@ -35,11 +35,11 @@ fun mapAlbum(album: ApiAlbum?): Album? {
     }
 }
 
-fun mapArtist(artist: ApiArtist?): Artist? {
+fun mapArtist(artist: DomainArtist?): Artist? {
     return artist?.let {
         val thumbnailUrl = mapUrl(artist.uri ?: "", "100x100")
         val coverUrl = mapUrl(artist.uri ?: "", "700x700")
-        return Artist(
+        Artist(
             artist.id,
             thumbnailUrl,
             coverUrl,

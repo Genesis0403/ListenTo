@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item android:id="@+id/search"
+          android:title="@string/search_option"
+          android:icon="@drawable/search_icon_24dp"
+    />
+    <item android:id="@+id/player"
+          android:title="@string/player_option"
+          android:icon="@drawable/player_icon_24dp"
+          android:checked="true"
+    />
+    <item android:id="@+id/settings"
+          android:title="@string/settings_option"
+          android:icon="@drawable/settings_icon_24dp"
+    />
+</menu>

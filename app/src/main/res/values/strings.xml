@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">ListenTo</string>
+    <string name="baseUrl">https://music.yandex.ru/handlers/</string>
+    <string name="search_option">Search</string>
+    <string name="settings_option">Settings</string>
+    <string name="player_option">Player</string>
 </resources>
