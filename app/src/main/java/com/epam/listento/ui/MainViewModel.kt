@@ -5,9 +5,10 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.mapTrack
-import com.epam.listento.api.model.ApiStorage
+import com.epam.listento.domain.DomainStorage
 import com.epam.listento.model.Track
-import com.epam.listento.repository.*
+import com.epam.listento.repository.StorageRepository
+import com.epam.listento.repository.TracksRepository
 import com.epam.listento.utils.ContextProvider
 import javax.inject.Inject
 
@@ -46,7 +47,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun createUrl(storage: ApiStorage): String {
+    private fun createUrl(storage: DomainStorage): String {
 // http://{host}/get-mp3/{s}/{ts}{path}
         return StringBuilder("https://").apply {
             append(storage.host)
