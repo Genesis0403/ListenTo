@@ -18,6 +18,8 @@ class MainViewModel @Inject constructor(
     private val storageRepository: StorageRepository
 ) : ViewModel() {
 
+    var lastQuery = ""
+
     private val _tracks: MutableLiveData<ApiResponse<List<Track>>> = MutableLiveData()
     val tracks: LiveData<ApiResponse<List<Track>>> get() = _tracks
 

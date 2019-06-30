@@ -106,7 +106,7 @@ class RepositoryModule {
                     artist.id,
                     artist.uri,
                     artist.name,
-                    coverToDomain(artist.cover)
+                    artist.cover?.let { coverToDomain(it) }
                 )
             }
 
