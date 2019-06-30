@@ -43,4 +43,6 @@ internal class DebounceSearchListener(
     private fun onDestroy() {
         job?.cancel()
     }
+
+    //TODO read about jobs pausing while lifecycle component paused too
 }
