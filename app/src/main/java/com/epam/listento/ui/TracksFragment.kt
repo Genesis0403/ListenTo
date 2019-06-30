@@ -7,6 +7,8 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.appcompat.widget.SearchView
+import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -17,6 +19,7 @@ import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.Track
+import com.epam.listento.utils.DebounceSearchListener
 import kotlinx.android.synthetic.main.tracks_fragment.*
 import javax.inject.Inject
 
@@ -30,7 +33,6 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
 
     @Inject
     lateinit var factory: ViewModelProvider.Factory
-
     private lateinit var mainViewModel: MainViewModel
 
     private val tracksAdapter = TracksAdapter(this)
@@ -60,23 +62,34 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
         val recycler = view.findViewById<RecyclerView>(R.id.tracksRecyclerView)
         val progress = view.findViewById<ProgressBar>(R.id.progress)
+        val toolBar = view.findViewById<Toolbar>(R.id.searchToolBar)
+        val searchView = toolBar.findViewById<SearchView>(R.id.actionSearchView)
 
-        downloadButton.setOnClickListener {
-            mainViewModel.fetchTracks("джизус")
-            progress.visibility = ProgressBar.VISIBLE
-        }
+        searchView.setQuery(mainViewModel.lastQuery, false)
 
-        recycler.apply {
+        listenToSearchViewQuery(searchView, progress)
+
+        recycler.run {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(context)
             adapter = tracksAdapter
-
-            mainViewModel.tracks.observe(
-                this@TracksFragment,
-                Observer<ApiResponse<List<Track>>> { response ->
-                    initObserver(response)
-                })
         }
+
+        mainViewModel.tracks.observe(this, Observer<ApiResponse<List<Track>>> { response ->
+            initObserver(response)
+        })
+    }
+
+    private fun listenToSearchViewQuery(searchView: SearchView, progress: ProgressBar) {
+        searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
+            if (query.isNotEmpty()) {
+                progress.visibility = ProgressBar.VISIBLE
+                mainViewModel.fetchTracks(query)
+                mainViewModel.lastQuery = query
+            } else {
+                //TODO implement job cancel when empty
+            }
+        })
     }
 
     private fun initObserver(response: ApiResponse<List<Track>>) {
@@ -84,7 +97,7 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
             progress.visibility = ProgressBar.GONE
             tracksAdapter.setTracks(response.body ?: emptyList())
         } else {
-            Toast.makeText(context, "Failed loading tracks", Toast.LENGTH_SHORT).show()
+            Toast.makeText(context, getString(R.string.failed_tracks_toast), Toast.LENGTH_SHORT).show()
         }
     }
 }

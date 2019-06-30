@@ -1,11 +1,26 @@
 <resources>
 
     <!-- Base application theme. -->
-    <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
+    <style name="AppTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Customize your theme here. -->
         <item name="colorPrimary">@color/colorPrimary</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+        <item name="toolbarStyle">@style/ToolBarStyle</item>
+    </style>
+
+    <style name="ToolBarStyle" parent="Widget.MaterialComponents.Toolbar">
+        <item name="searchViewStyle">@style/SearchViewStyle</item>
+        <item name="android:textColorHint">@color/whiteColor</item>
+        <item name="android:editTextColor">@color/whiteColor</item>
+        <item name="android:background">@color/colorPrimary</item>
+    </style>
+
+    <style name="SearchViewStyle" parent="Widget.AppCompat.SearchView">
+        <item name="searchIcon">@drawable/action_search_item_24dp</item>
+        <item name="defaultQueryHint">Tracks</item>
+        <item name="android:textColorHint">@color/whiteColor</item>
+        <item name="android:editTextColor">@color/whiteColor</item>
     </style>
 
 </resources>

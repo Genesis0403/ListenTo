@@ -106,7 +106,7 @@ class RepositoryModule {
                     artist.id,
                     artist.uri,
                     artist.name,
-                    coverToDomain(artist.cover)
+                    artist.cover?.let { coverToDomain(it) }
                 )
             }
 
@@ -123,7 +123,6 @@ class RepositoryModule {
             override fun coverToDomain(cover: ApiCover): DomainCover {
                 return DomainCover(cover.uri)
             }
-
         }
     }
 }

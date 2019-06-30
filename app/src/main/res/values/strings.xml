@@ -4,4 +4,6 @@
     <string name="search_option">Search</string>
     <string name="settings_option">Settings</string>
     <string name="player_option">Player</string>
+    <string name="action_search_item">Search</string>
+    <string name="failed_tracks_toast">Failed loading tracks</string>
 </resources>
