@@ -1,13 +1,14 @@
 package com.epam.listento.ui
 
-import android.app.SearchManager
 import android.content.Context
 import android.os.Bundle
-import android.view.*
-import android.view.inputmethod.InputMethodManager
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
+import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
@@ -18,6 +19,7 @@ import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.Track
+import com.epam.listento.utils.DebounceSearchListener
 import kotlinx.android.synthetic.main.tracks_fragment.*
 import javax.inject.Inject
 
@@ -35,8 +37,6 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
 
     private val tracksAdapter = TracksAdapter(this)
 
-    private lateinit var searchView: SearchView
-
     override fun onClick(track: Track) {
     }
 
@@ -48,7 +48,6 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
-        setHasOptionsMenu(true)
     }
 
     override fun onCreateView(
@@ -63,23 +62,33 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
         val recycler = view.findViewById<RecyclerView>(R.id.tracksRecyclerView)
         val progress = view.findViewById<ProgressBar>(R.id.progress)
+        val toolBar = view.findViewById<Toolbar>(R.id.searchToolBar)
+        val searchView = toolBar.findViewById<SearchView>(R.id.actionSearchView)
 
-        downloadButton.setOnClickListener {
-            mainViewModel.fetchTracks("джизус")
-            progress.visibility = ProgressBar.VISIBLE
-        }
+        searchView.setQuery(mainViewModel.lastQuery, false)
 
-        recycler.apply {
+        listenToSearchViewQuery(searchView, progress)
+
+        recycler.run {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(context)
             adapter = tracksAdapter
-
-            mainViewModel.tracks.observe(
-                this@TracksFragment,
-                Observer<ApiResponse<List<Track>>> { response ->
-                    initObserver(response)
-                })
         }
+
+        mainViewModel.tracks.observe(this, Observer<ApiResponse<List<Track>>> { response ->
+            initObserver(response)
+        })
+    }
+
+    private fun listenToSearchViewQuery(searchView: SearchView, progress: ProgressBar) {
+        searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
+            if (query.isNotEmpty()) {
+                progress.visibility = ProgressBar.VISIBLE
+                mainViewModel.fetchTracks(query)
+            } else {
+                //TODO implement job cancel when empty
+            }
+        })
     }
 
     private fun initObserver(response: ApiResponse<List<Track>>) {
@@ -87,48 +96,7 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
             progress.visibility = ProgressBar.GONE
             tracksAdapter.setTracks(response.body ?: emptyList())
         } else {
-            Toast.makeText(context, "Failed loading tracks", Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
-        inflater.inflate(R.menu.search_fragment_searchview, menu)
-
-        val searchItem = menu.findItem(R.id.actionSearch)
-        val searchManager = activity?.getSystemService(Context.SEARCH_SERVICE) as SearchManager
-
-        if (searchItem != null) {
-            searchView = searchItem.actionView as SearchView
-
-            searchView.run {
-                setIconifiedByDefault(false)
-                setSearchableInfo(searchManager.getSearchableInfo(activity?.componentName))
-                setOnQueryTextListener(
-                    object : SearchView.OnQueryTextListener {
-                        override fun onQueryTextSubmit(query: String?): Boolean {
-                            val inputManager =
-                                activity?.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-                            inputManager.hideSoftInputFromWindow(view?.windowToken, 0)
-                            return true
-                        }
-
-                        override fun onQueryTextChange(newText: String?): Boolean {
-                            Toast.makeText(context, "Text changed: $newText", Toast.LENGTH_SHORT).show()
-                            return true
-                        }
-                    }
-                )
-            }
-            super.onCreateOptionsMenu(menu, inflater)
-        }
-    }
-
-    override fun onOptionsItemSelected(item: MenuItem): Boolean {
-        return when (item.itemId) {
-            R.id.actionSearch -> {
-                false
-            }
-            else -> super.onOptionsItemSelected(item)
+            Toast.makeText(context, getString(R.string.failed_tracks_toast), Toast.LENGTH_SHORT).show()
         }
     }
 }
