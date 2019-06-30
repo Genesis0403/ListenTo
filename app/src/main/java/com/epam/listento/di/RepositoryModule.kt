@@ -123,7 +123,6 @@ class RepositoryModule {
             override fun coverToDomain(cover: ApiCover): DomainCover {
                 return DomainCover(cover.uri)
             }
-
         }
     }
 }

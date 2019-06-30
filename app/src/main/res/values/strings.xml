@@ -4,4 +4,5 @@
     <string name="search_option">Search</string>
     <string name="settings_option">Settings</string>
     <string name="player_option">Player</string>
+    <string name="action_search_item">Search</string>
 </resources>
