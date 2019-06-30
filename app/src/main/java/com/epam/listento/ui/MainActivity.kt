@@ -25,10 +25,12 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         mainViewModel = ViewModelProviders.of(this, factory)[MainViewModel::class.java]
 
+        savedInstanceState ?: loadFragment(R.id.contentContainer, TracksFragment.newInstance())
+
         navigationBar.setOnNavigationItemSelectedListener {
             when (it.itemId) {
-                R.id.search -> {
-                    if (navigationBar.selectedItemId != R.id.search) {
+                R.id.searchFragment -> {
+                    if (navigationBar.selectedItemId != R.id.searchFragment) {
                         loadFragment(R.id.contentContainer, TracksFragment.newInstance())
                     }
                 }
@@ -48,4 +50,3 @@ class MainActivity : AppCompatActivity() {
             .commit()
     }
 }
-
