@@ -85,6 +85,7 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
             if (query.isNotEmpty()) {
                 progress.visibility = ProgressBar.VISIBLE
                 mainViewModel.fetchTracks(query)
+                mainViewModel.lastQuery = query
             } else {
                 //TODO implement job cancel when empty
             }
