@@ -6,4 +6,7 @@
     <string name="player_option">Player</string>
     <string name="action_search_item">Search</string>
     <string name="failed_tracks_toast">Failed loading tracks</string>
+    <string name="notification_channel_description">ListenTo Notification Channel</string>
+    <string name="notification_channel_name">ListenTo Notification</string>
+    <string name="previous_playback">Previous</string>
 </resources>

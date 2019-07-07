@@ -1,16 +1,15 @@
 package com.epam.listento.di
 
+import android.app.Application
 import android.content.Context
 import android.net.Uri
 import android.util.Log
+import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.YandexService
 import com.epam.listento.api.model.*
 import com.epam.listento.domain.*
-import com.epam.listento.repository.AudioRepository
-import com.epam.listento.repository.FileRepository
-import com.epam.listento.repository.StorageRepository
-import com.epam.listento.repository.TracksRepository
-import com.epam.listento.utils.ContextProvider
+import com.epam.listento.model.Track
+import com.epam.listento.repository.*
 import com.epam.listento.utils.MusicMapper
 import dagger.Module
 import dagger.Provides
@@ -32,7 +31,7 @@ class RepositoryModule {
         private const val TRACKS_REPOSITORY = "TRACKS_REPOSITORY"
         private const val STORAGE_REPOSITORY = "STORAGE_REPOSITORY"
         private const val FILE_REPOSITORY = "FILE_REPOSITORY"
-        private const val FILE_PLACEHOLDER = ""
+        private const val PREFIX_PLACEHOLDER = "track_placeholder"
     }
 
     @Singleton
@@ -155,7 +154,7 @@ class RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideFileRepository(service: YandexService, provider: ContextProvider): FileRepository {
+    fun provideFileRepository(service: YandexService, context: Application): FileRepository {
         return object : FileRepository {
             override fun downloadTrack(
                 audioUrl: String,
@@ -167,7 +166,7 @@ class RepositoryModule {
                         if (response.isSuccessful) {
                             val url = async {
                                 response.body()?.let {
-                                    downloadFile(it, provider.context())
+                                    downloadFile(it, context)
                                 }
                             }.await()
                             completion(Response.success(url))
@@ -179,28 +178,118 @@ class RepositoryModule {
                     }
                 }
             }
+
+            private suspend fun downloadFile(response: ResponseBody, context: Context): Uri {
+                val file = File.createTempFile(PREFIX_PLACEHOLDER, null, context.cacheDir)
+                try {
+                    val fileReader = ByteArray(4096)
+                    response.byteStream().use { inputStream ->
+                        FileOutputStream(file).use { outStream ->
+                            while (true) {
+                                val read = inputStream.read(fileReader)
+                                if (read == -1) {
+                                    break
+                                }
+                                outStream.write(fileReader, 0, read)
+                            }
+                            outStream.flush()
+                        }
+                    }
+                } catch (e: Exception) {
+                    Log.e(FILE_REPOSITORY, "$e")
+                }
+                return Uri.fromFile(file)
+            }
         }
     }
 
-    private suspend fun downloadFile(response: ResponseBody, context: Context): Uri {
-        val file = File.createTempFile(FILE_PLACEHOLDER, null, context.cacheDir)
-        try {
-            val fileReader = ByteArray(4096)
-            response.byteStream().use { inputStream ->
-                FileOutputStream(file).use { outStream ->
-                    while (true) {
-                        val read = inputStream.read(fileReader)
-                        if (read == -1) {
-                            break
-                        }
-                        outStream.write(fileReader, 0, read)
-                    }
-                    outStream.flush()
+    @Singleton
+    @Provides
+    fun provideMusicRepo(
+        storageRepository: StorageRepository,
+        audioRepository: AudioRepository,
+        fileRepository: FileRepository
+    ): MusicRepository {
+        return object : MusicRepository {
+
+            private val tracks = mutableListOf<Track>()
+            private var current = 0
+            private var job: Job? = null
+
+            override fun isDataChanged(data: List<Track>): Boolean {
+                return !tracks.containsAll(data)
+            }
+
+            override fun containsTrack(track: Track): Boolean {
+                return tracks.contains(track)
+            }
+
+            override fun getCurrent(): Track {
+                return tracks[current]
+            }
+
+            override fun setCurrent(track: Track) {
+                current = if (tracks.contains(track)) {
+                    tracks.indexOf(track)
+                } else {
+                    return
                 }
             }
-        } catch (e: Exception) {
-            Log.e(FILE_REPOSITORY, "$e")
+
+            override fun getNext(): Track {
+                current = ++current % tracks.size
+                return tracks[current]
+            }
+
+            override fun getPrevious(): Track {
+                val previous = --current
+                return if (previous > -1) {
+                    tracks[previous]
+                } else {
+                    current = tracks.size - 1
+                    tracks[current]
+                }
+            }
+
+            override fun setSource(data: List<Track>) {
+                with(tracks) {
+                    clear()
+                    addAll(data)
+                    current = 0
+                }
+            }
+
+            override fun downloadTrack(track: Track, completion: (ApiResponse<Uri>) -> Unit) {
+                job?.cancel()
+                job = storageRepository.fetchStorage(track.storageDir) { response ->
+                    if (response.isSuccessful) {
+                        response.body()?.let {
+                            val downloadUrl = audioRepository.fetchAudioUrl(it)
+                            onDownloadResponse(downloadUrl) { result ->
+                                CoroutineScope(Dispatchers.Main).launch {
+                                    completion(result)
+                                }
+                            }
+                        }
+                    } else {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            completion(ApiResponse.error(response.message()))
+                        }
+                    }
+                }
+            }
+
+            private fun onDownloadResponse(downloadUrl: String, completion: (ApiResponse<Uri>) -> Unit) {
+                fileRepository.downloadTrack(downloadUrl) { response ->
+                    completion(
+                        if (response.isSuccessful) {
+                            ApiResponse.success(response.body())
+                        } else {
+                            ApiResponse.error(response.message())
+                        }
+                    )
+                }
+            }
         }
-        return Uri.fromFile(file)
     }
 }
