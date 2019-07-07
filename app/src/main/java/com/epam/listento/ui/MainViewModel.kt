@@ -7,10 +7,7 @@ import androidx.lifecycle.ViewModel
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.mapTrack
 import com.epam.listento.model.Track
-import com.epam.listento.repository.AudioRepository
-import com.epam.listento.repository.FileRepository
-import com.epam.listento.repository.StorageRepository
-import com.epam.listento.repository.TracksRepository
+import com.epam.listento.repository.*
 import com.epam.listento.utils.ContextProvider
 import javax.inject.Inject
 

@@ -4,7 +4,7 @@
           android:title="@string/search_option"
           android:icon="@drawable/search_icon_24dp"
     />
-    <item android:id="@+id/player"
+    <item android:id="@+id/playerFrament"
           android:title="@string/player_option"
           android:icon="@drawable/player_icon_24dp"
           android:checked="true"

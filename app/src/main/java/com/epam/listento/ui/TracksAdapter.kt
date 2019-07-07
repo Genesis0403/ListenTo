@@ -43,7 +43,7 @@ class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapte
             artist.text = item.artist?.name
             title.text = item.title
             duration.text = item.duration
-            loadImage(cover, item.album?.listCover)
+            loadImage(cover, item.album?.thumbnailCover)
         }
     }
 
