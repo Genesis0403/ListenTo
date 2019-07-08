@@ -2,12 +2,14 @@ package com.epam.listento.di
 
 import android.app.Application
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.util.Log
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.YandexService
 import com.epam.listento.api.model.*
 import com.epam.listento.domain.*
+import com.epam.listento.model.NotificationTrack
 import com.epam.listento.model.Track
 import com.epam.listento.repository.*
 import com.epam.listento.utils.MusicMapper
@@ -18,6 +20,7 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
+import java.net.URL
 import javax.inject.Singleton
 
 @Module(
@@ -69,11 +72,15 @@ class RepositoryModule {
         mappers: MusicMapper
     ): StorageRepository {
         return object : StorageRepository {
+
+            private var job: Job? = null
+
             override fun fetchStorage(
                 storageDir: String,
                 completion: (Response<DomainStorage>) -> Unit
-            ): Job {
-                return GlobalScope.launch(Dispatchers.IO) {
+            ) {
+                job?.cancel()
+                job = GlobalScope.launch(Dispatchers.IO) {
                     try {
                         val result =
                             Response.success(mappers.storageToDomain(service.fetchStorage(storageDir).body()!!))
@@ -156,11 +163,15 @@ class RepositoryModule {
     @Provides
     fun provideFileRepository(service: YandexService, context: Application): FileRepository {
         return object : FileRepository {
+
+            private var job: Job? = null
+
             override fun downloadTrack(
                 audioUrl: String,
                 completion: (Response<Uri>) -> Unit
-            ): Job {
-                return GlobalScope.launch(Dispatchers.IO) {
+            ) {
+                job?.cancel()
+                job = GlobalScope.launch(Dispatchers.IO) {
                     try {
                         val response = service.downloadTrack(audioUrl)
                         if (response.isSuccessful) {
@@ -257,9 +268,8 @@ class RepositoryModule {
                 }
             }
 
-            override fun downloadTrack(track: Track, completion: (ApiResponse<Uri>) -> Unit) {
-                job?.cancel()
-                job = storageRepository.fetchStorage(track.storageDir) { response ->
+            override fun downloadTrack(track: NotificationTrack, completion: (ApiResponse<Uri>) -> Unit) {
+                storageRepository.fetchStorage(track.storageDir) { response ->
                     if (response.isSuccessful) {
                         response.body()?.let {
                             val downloadUrl = audioRepository.fetchAudioUrl(it)
@@ -285,6 +295,49 @@ class RepositoryModule {
                         } else {
                             ApiResponse.error(response.message())
                         }
+                    )
+                }
+            }
+        }
+    }
+
+    @Singleton
+    @Provides
+    fun provideTrackRepo(service: YandexService): TrackRepository {
+        return object : TrackRepository {
+
+            private var job: Job? = null
+
+            override fun fecthTrack(
+                id: Int,
+                completion: (ApiResponse<NotificationTrack>) -> Unit
+            ) {
+                job?.cancel()
+                job = GlobalScope.launch(Dispatchers.IO) {
+                    val response = service.fetchTrack(id)
+                    val track = mapToNotification(response.body()?.track!!)
+                    CoroutineScope(Dispatchers.Main).launch {
+                        if (response.isSuccessful) {
+                            completion(ApiResponse.success(track))
+                        } else {
+                            completion(ApiResponse.error(response.message()))
+                        }
+                    }
+                }
+            }
+
+            private fun mapToNotification(track: ApiTrack): NotificationTrack {
+                val apiUrl = track.albums?.first()?.coverUri ?: track.artists?.first()?.cover?.uri ?: ""
+                val url = URL("https://${apiUrl.replace("%%", "700x700")}")
+                val bitmap = BitmapFactory.decodeStream(url.openStream())
+                return track.run {
+                    NotificationTrack(
+                        id,
+                        storageDir ?: "",
+                        title ?: "None",
+                        artists?.first()?.name ?: "None",
+                        durationMs ?: 0,
+                        bitmap
                     )
                 }
             }

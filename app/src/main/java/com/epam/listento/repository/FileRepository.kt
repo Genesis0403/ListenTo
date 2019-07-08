@@ -8,5 +8,5 @@ interface FileRepository {
     fun downloadTrack(
         audioUrl: String,
         completion: (Response<Uri>) -> Unit
-    ): Job
+    )
 }

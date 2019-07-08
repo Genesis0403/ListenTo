@@ -20,6 +20,7 @@ import androidx.media.session.MediaButtonReceiver
 import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.repository.MusicRepository
+import com.epam.listento.repository.TrackRepository
 import com.epam.listento.ui.MainActivity
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
@@ -37,7 +38,10 @@ class PlayerService : Service() {
     }
 
     @Inject
-    lateinit var musicRepository: MusicRepository
+    lateinit var musicRepo: MusicRepository
+
+    @Inject
+    lateinit var trackRepo: TrackRepository
 
     private lateinit var mediaSession: MediaSessionCompat
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
@@ -67,13 +71,14 @@ class PlayerService : Service() {
             )
 
         player = ExoPlayerFactory.newSimpleInstance(this).also {
-            it.addListener(playerListener)
+            //it.addListener(playerListener)
         }
         mediaSession = initMediaSession()
 
         mediaSessionCallback = MediaSessionCallback(
             applicationContext,
-            musicRepository,
+            musicRepo,
+            trackRepo,
             WeakReference(mediaSession),
             player,
             stateBuilder
@@ -129,7 +134,8 @@ class PlayerService : Service() {
             priority = NotificationCompat.PRIORITY_HIGH
             setShowWhen(false)
             setOnlyAlertOnce(true)
-            color = ContextCompat.getColor(this@PlayerService, R.color.darkColor)
+            color = ContextCompat.getColor(this@PlayerService, R.color.colorPrimary)
+
             addAction(
                 R.drawable.ic_fast_rewind_black_24dp,
                 getString(R.string.previous_playback),
@@ -219,13 +225,13 @@ class PlayerService : Service() {
         fun getSessionToken(): MediaSessionCompat.Token? = mediaSession.sessionToken
 
         fun changeSourceData(data: List<Track>) {
-            if (musicRepository.isDataChanged(data)) {
-                musicRepository.setSource(data)
+            if (musicRepo.isDataChanged(data)) {
+                musicRepo.setSource(data)
             }
         }
 
         fun playTrack(track: Track) {
-            musicRepository.setCurrent(track)
+            musicRepo.setCurrent(track)
             mediaSession.controller.transportControls.play()
         }
     }
@@ -241,12 +247,12 @@ class PlayerService : Service() {
         }
     }
 
-    private val playerListener = object : Player.EventListener {
-        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-            super.onPlayerStateChanged(playWhenReady, playbackState)
-            if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
-                mediaSessionCallback.onSkipToNext()
-            }
-        }
-    }
+//    private val playerListener = object : Player.EventListener {
+//        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+//            super.onPlayerStateChanged(playWhenReady, playbackState)
+//            if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
+//                mediaSessionCallback.onSkipToNext()
+//            }
+//        }
+//    }
 }
