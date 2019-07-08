@@ -21,7 +21,9 @@ import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.repository.MusicRepository
 import com.epam.listento.ui.MainActivity
+import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
+import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import java.lang.ref.WeakReference
 import javax.inject.Inject
@@ -43,7 +45,7 @@ class PlayerService : Service() {
     private lateinit var mediaSessionCallback: MediaSessionCallback
 
     private val channelId by lazy { createNotificationChannel() }
-    private val activityIntent by lazy { Intent(this, MainActivity::class.java) }
+    private val activityIntent by lazy { Intent(applicationContext, MainActivity::class.java) }
     private var currentState = PlaybackStateCompat.STATE_STOPPED
 
     override fun onBind(intent: Intent?): IBinder? {
@@ -61,10 +63,14 @@ class PlayerService : Service() {
                         or PlaybackStateCompat.ACTION_PAUSE
                         or PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
                         or PlaybackStateCompat.ACTION_SKIP_TO_NEXT
+                        or PlaybackStateCompat.ACTION_STOP
             )
 
-        player = ExoPlayerFactory.newSimpleInstance(applicationContext)
+        player = ExoPlayerFactory.newSimpleInstance(this).also {
+            it.addListener(playerListener)
+        }
         mediaSession = initMediaSession()
+
         mediaSessionCallback = MediaSessionCallback(
             applicationContext,
             musicRepository,
@@ -78,13 +84,14 @@ class PlayerService : Service() {
                 stopSelf()
             }
         }
+
         mediaSession.setCallback(mediaSessionCallback)
+
         registerReceiver(becomeNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
     }
 
     private fun initMediaSession(): MediaSessionCompat {
-        return MediaSessionCompat(baseContext, TAG).apply {
-
+        return MediaSessionCompat(this, TAG).apply {
             setPlaybackState(stateBuilder.build())
             setSessionActivity(
                 PendingIntent.getActivity(applicationContext, 0, activityIntent, 0)
@@ -94,7 +101,7 @@ class PlayerService : Service() {
                     applicationContext,
                     0,
                     Intent(
-                        Intent.ACTION_MEDIA_BUTTON, null, applicationContext, becomeNoisyReceiver::class.java
+                        Intent.ACTION_MEDIA_BUTTON, null, applicationContext, MediaButtonReceiver::class.java
                     ),
                     0
                 )
@@ -115,14 +122,14 @@ class PlayerService : Service() {
         return super.onStartCommand(intent, flags, startId)
     }
 
-    private fun createNotification(): Notification { //TODO move to another class?
-        return NotificationCompat.Builder(baseContext, channelId).apply {
+    private fun createNotification(): Notification { // TODO move to another class?
+        return NotificationCompat.Builder(this, channelId).apply {
             setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             setSmallIcon(R.drawable.notification_small_icon_24dp)
             priority = NotificationCompat.PRIORITY_HIGH
             setShowWhen(false)
-            setSound(null)
-
+            setOnlyAlertOnce(true)
+            color = ContextCompat.getColor(this@PlayerService, R.color.darkColor)
             addAction(
                 R.drawable.ic_fast_rewind_black_24dp,
                 getString(R.string.previous_playback),
@@ -131,24 +138,24 @@ class PlayerService : Service() {
             if (currentState == PlaybackStateCompat.STATE_PLAYING) {
                 addAction(
                     R.drawable.ic_pause_black_24dp,
-                    getString(R.string.previous_playback),
+                    getString(R.string.play_action),
                     PlaybackStateCompat.ACTION_PLAY_PAUSE
                 )
             } else {
                 addAction(
                     R.drawable.ic_play_arrow_black_24dp,
-                    getString(R.string.previous_playback),
+                    getString(R.string.pause_action),
                     PlaybackStateCompat.ACTION_PLAY_PAUSE
                 )
             }
             addAction(
                 R.drawable.ic_fast_forward_black_24dp,
-                getString(R.string.previous_playback),
+                getString(R.string.next_action),
                 PlaybackStateCompat.ACTION_SKIP_TO_NEXT
             )
             setStyle(
                 MediaStyle()
-                    .setShowActionsInCompactView(0)
+                    .setShowActionsInCompactView(0, 1, 2)
                     .setMediaSession(mediaSession.sessionToken)
             )
             fillNotificationWithMetadata(this)
@@ -161,7 +168,6 @@ class PlayerService : Service() {
             val channelName = getString(R.string.notification_channel_name)
             val channel = NotificationChannel(CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_HIGH)
             channel.description = getString(R.string.notification_channel_description)
-            channel.setSound(null, null)
             val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             manager.createNotificationChannel(channel)
             CHANNEL_ID
@@ -192,7 +198,7 @@ class PlayerService : Service() {
             .setLargeIcon(metadata.iconBitmap)
             .setContentIntent(mediaSession.controller.sessionActivity)
             .setDeleteIntent(
-                MediaButtonReceiver.buildMediaButtonPendingIntent(baseContext, PlaybackStateCompat.ACTION_STOP)
+                MediaButtonReceiver.buildMediaButtonPendingIntent(applicationContext, PlaybackStateCompat.ACTION_STOP)
             )
     }
 
@@ -202,7 +208,7 @@ class PlayerService : Service() {
                 startForeground(NOTIFICATION_ID, createNotification())
             }
             PlaybackStateCompat.STATE_PAUSED -> {
-                NotificationManagerCompat.from(baseContext).notify(NOTIFICATION_ID, createNotification())
+                NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, createNotification())
                 stopForeground(false)
             }
             else -> stopForeground(true)
@@ -231,6 +237,15 @@ class PlayerService : Service() {
                     mediaSessionCallback.onPause()
                 }
                 else -> return
+            }
+        }
+    }
+
+    private val playerListener = object : Player.EventListener {
+        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+            super.onPlayerStateChanged(playWhenReady, playbackState)
+            if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
+                mediaSessionCallback.onSkipToNext()
             }
         }
     }

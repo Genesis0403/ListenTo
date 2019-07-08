@@ -6,7 +6,7 @@ class ApiResponse<T>(
     val error: String?
 ) {
     companion object {
-        fun <T> success(body: T?) = ApiResponse(Status.SUCCESS, body, null)
-        fun <T> error(error: String, body: T? = null) = ApiResponse(Status.ERROR, body, error)
+        fun <T> success(body: T?): ApiResponse<T> = ApiResponse(Status.SUCCESS, body, null)
+        fun <T> error(error: String, body: T? = null): ApiResponse<T> = ApiResponse(Status.ERROR, body, error)
     }
 }

@@ -1,6 +1,5 @@
 package com.epam.listento.ui
 
-import android.content.Intent
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
@@ -9,7 +8,6 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import com.epam.listento.App
 import com.epam.listento.R
-import com.epam.listento.model.PlayerService
 import kotlinx.android.synthetic.main.activity_main.*
 import javax.inject.Inject
 
@@ -69,6 +67,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
-        stopService(Intent(this, PlayerService::class.java))
+        // stopService(Intent(this, PlayerService::class.java))
     }
 }

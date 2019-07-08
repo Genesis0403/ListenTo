@@ -44,5 +44,5 @@ internal class DebounceSearchListener(
         job?.cancel()
     }
 
-    //TODO read about jobs pausing while lifecycle component paused too
+    // TODO read about jobs pausing while lifecycle component paused too
 }
