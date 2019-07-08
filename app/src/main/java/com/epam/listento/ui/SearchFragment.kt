@@ -48,7 +48,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
     private var controller: MediaControllerCompat? = null
 
     override fun onClick(track: Track) {
-        binder?.let { //TODO rework data transaction
+        binder?.let { // TODO rework data transaction
             it.changeSourceData(mainViewModel.tracks.value?.body ?: emptyList())
             it.playTrack(track)
         }

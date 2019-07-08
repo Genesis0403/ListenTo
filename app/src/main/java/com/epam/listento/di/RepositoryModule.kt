@@ -164,11 +164,9 @@ class RepositoryModule {
                     try {
                         val response = service.downloadTrack(audioUrl)
                         if (response.isSuccessful) {
-                            val url = async {
-                                response.body()?.let {
-                                    downloadFile(it, context)
-                                }
-                            }.await()
+                            val url = response.body()?.let {
+                                downloadFile(it, context)
+                            }
                             completion(Response.success(url))
                         } else {
                             completion(Response.error(response.code(), response.errorBody()))
@@ -179,7 +177,7 @@ class RepositoryModule {
                 }
             }
 
-            private suspend fun downloadFile(response: ResponseBody, context: Context): Uri {
+            private fun downloadFile(response: ResponseBody, context: Context): Uri {
                 val file = File.createTempFile(PREFIX_PLACEHOLDER, null, context.cacheDir)
                 try {
                     val fileReader = ByteArray(4096)

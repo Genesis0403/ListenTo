@@ -18,7 +18,6 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import java.lang.ref.WeakReference
-import java.util.concurrent.TimeUnit
 
 class MediaSessionCallback(
     private val context: Context,
@@ -32,46 +31,26 @@ class MediaSessionCallback(
     private val metadataBuilder = MediaMetadataCompat.Builder()
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var isAudioFocused = false
+    private val audioFocusRequest: AudioFocusRequest?
 
-    private val audioAttributes by lazy {
-        return@lazy if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            AudioAttributes.Builder()
-                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
-                .setUsage(AudioAttributes.USAGE_MEDIA)
-                .build()
-        } else {
-            null
+    private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
+        when (focusChange) {
+            AudioManager.AUDIOFOCUS_GAIN -> {
+                isAudioFocused = true
+                onPlay()
+            }
+            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
+                onPause()
+            }
+            else -> {
+                isAudioFocused = false
+                onPause()
+            }
         }
     }
 
-    private val audioFocusRequest by lazy {
-        return@lazy if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
-                .setOnAudioFocusChangeListener(audioFocusListener)
-                .setAudioAttributes(audioAttributes)
-                .build()
-        } else {
-            null
-        }
-    }
-
-    private fun convertDurationToMs(str: String): Long { //TODO move converter somewhere else
-        val minutes = str.substringBefore(':')
-        val seconds = str.substringAfter(':')
-        return TimeUnit.MINUTES.toMillis(minutes.toLong()) +
-                TimeUnit.SECONDS.toMillis(seconds.toLong())
-    }
-
-    private fun fillMetadataFromTrack(track: Track): MediaMetadataCompat {
-        return metadataBuilder
-            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist?.name ?: "None")
-            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
-            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, convertDurationToMs(track.duration))
-            .putBitmap(
-                MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
-                BitmapFactory.decodeResource(context.resources, R.drawable.no_photo_24dp)
-            )
-            .build()
+    init {
+        audioFocusRequest = initAudioFocusRequest()
     }
 
     override fun onPlay() {
@@ -95,27 +74,12 @@ class MediaSessionCallback(
         }
 
         if (mediaSession.get()?.controller?.playbackState?.state != PlaybackStateCompat.STATE_PAUSED) {
-            musicRepository.downloadTrack(track) { response ->
-                if (response.status.isSuccess() && response.body != null) {
-                    prepareToPlay(track, response.body)
-                    player.playWhenReady = true
-                }
-            }
+            downloadTrack(track)
         } else {
             player.playWhenReady = true
         }
 
-        mediaSession.get()?.let {
-            it.isActive = true
-            it.setPlaybackState(
-                stateBuilder.setState(
-                    PlaybackStateCompat.STATE_PLAYING,
-                    PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
-                    1f
-                ).build()
-            )
-        }
-
+        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
         onComplete(PlaybackStateCompat.STATE_PLAYING)
     }
 
@@ -124,13 +88,7 @@ class MediaSessionCallback(
         if (player.playWhenReady) {
             player.playWhenReady = false
         }
-        mediaSession.get()?.setPlaybackState(
-            stateBuilder.setState(
-                PlaybackStateCompat.STATE_PAUSED,
-                PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
-                1f
-            ).build()
-        )
+        updateSessionData(true, PlaybackStateCompat.STATE_PAUSED)
         onComplete(PlaybackStateCompat.STATE_PAUSED)
     }
 
@@ -139,17 +97,7 @@ class MediaSessionCallback(
         if (player.playWhenReady) {
             player.playWhenReady = false
         }
-
-        mediaSession.get()?.let {
-            it.isActive = false
-            it.setPlaybackState(
-                stateBuilder.setState(
-                    PlaybackStateCompat.STATE_STOPPED,
-                    PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
-                    1f
-                ).build()
-            )
-        }
+        updateSessionData(false, PlaybackStateCompat.STATE_STOPPED)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             audioManager.abandonAudioFocusRequest(audioFocusRequest)
         } else {
@@ -164,12 +112,8 @@ class MediaSessionCallback(
         val track = musicRepository.getNext()
         val metadata = fillMetadataFromTrack(track)
         mediaSession.get()?.setMetadata(metadata)
-
-        musicRepository.downloadTrack(track) { response ->
-            if (response.status.isSuccess() && response.body != null) {
-                prepareToPlay(track, response.body)
-            }
-        }
+        downloadTrack(track)
+        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
         onComplete(PlaybackStateCompat.STATE_PLAYING)
     }
 
@@ -180,20 +124,60 @@ class MediaSessionCallback(
         val metadata = fillMetadataFromTrack(track)
         mediaSession.get()?.setMetadata(metadata)
 
-        musicRepository.downloadTrack(track) { response ->
-            if (response.status.isSuccess() && response.body != null) {
-                prepareToPlay(track, response.body)
-            }
-        }
+        downloadTrack(track)
+        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
         onComplete(PlaybackStateCompat.STATE_PLAYING)
     }
 
-    override fun onSeekTo(pos: Long) {
-        super.onSeekTo(pos)
-        //TODO implement onSeekTo
+    private fun initAudioFocusRequest(): AudioFocusRequest? {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val attributes = AudioAttributes.Builder()
+                .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
+                .setUsage(AudioAttributes.USAGE_MEDIA)
+                .build()
+            AudioFocusRequest.Builder(AudioManager.AUDIOFOCUS_GAIN)
+                .setOnAudioFocusChangeListener(audioFocusListener)
+                .setAudioAttributes(attributes)
+                .build()
+        } else {
+            null
+        }
     }
 
-    private fun prepareToPlay(track: Track, uri: Uri) {
+    private fun fillMetadataFromTrack(track: Track): MediaMetadataCompat {
+        return metadataBuilder
+            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist?.name ?: "None")
+            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
+            .putBitmap(
+                MediaMetadataCompat.METADATA_KEY_ALBUM_ART,
+                BitmapFactory.decodeResource(context.resources, R.drawable.no_photo_24dp)
+            )
+            .build() // TODO implement fillMetadata when Track request will be added.
+    }
+
+    private fun downloadTrack(track: Track) {
+        musicRepository.downloadTrack(track) { response ->
+            if (response.status.isSuccess() && response.body != null) {
+                prepareToPlay(response.body)
+                player.playWhenReady = true
+            }
+        }
+    }
+
+    private fun updateSessionData(isActive: Boolean, state: Int) {
+        mediaSession.get()?.let {
+            it.isActive = isActive
+            it.setPlaybackState(
+                stateBuilder.setState(
+                    state,
+                    PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
+                    1f
+                ).build()
+            )
+        }
+    }
+
+    private fun prepareToPlay(uri: Uri) {
         val dataSourceFactory = DefaultDataSourceFactory(
             context,
             Util.getUserAgent(context, context.getString(R.string.app_name))
@@ -202,32 +186,5 @@ class MediaSessionCallback(
             ProgressiveMediaSource.Factory(dataSourceFactory)
                 .createMediaSource(uri)
         )
-    }
-
-    private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
-        when (focusChange) {
-            AudioManager.AUDIOFOCUS_GAIN -> {
-                isAudioFocused = true
-                mediaSession.get()?.let {
-                    it.isActive = true
-                    it.setPlaybackState(
-                        stateBuilder.setState(
-                            PlaybackStateCompat.STATE_PLAYING,
-                            PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
-                            1f
-                        ).build()
-                    )
-                }
-                onComplete(PlaybackStateCompat.STATE_PLAYING)
-                player.playWhenReady = true
-            }
-            AudioManager.AUDIOFOCUS_LOSS_TRANSIENT_CAN_DUCK -> {
-                onPause()
-            }
-            else -> {
-                isAudioFocused = false
-                onPause()
-            }
-        }
     }
 }
