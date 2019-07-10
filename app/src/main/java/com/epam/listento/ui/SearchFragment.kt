@@ -48,7 +48,8 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
     private var controller: MediaControllerCompat? = null
 
     override fun onClick(track: Track) {
-        binder?.let { // TODO rework data transaction
+        binder?.let {
+            // TODO rework data transaction
             it.changeSourceData(mainViewModel.tracks.value?.body ?: emptyList())
             it.playTrack(track)
         }
@@ -116,7 +117,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.d(TAG, "ON DESTROY")
+        Log.d(TAG, "DESTROYED")
         binder = null
         controller = null
         activity?.unbindService(connection)

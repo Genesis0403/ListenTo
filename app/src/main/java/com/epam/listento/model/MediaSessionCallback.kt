@@ -2,7 +2,6 @@ package com.epam.listento.model
 
 import android.content.Context
 import android.content.Intent
-import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -11,9 +10,7 @@ import android.os.Build
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import com.epam.listento.R
-import com.epam.listento.api.model.ApiTrack
 import com.epam.listento.repository.MusicRepository
 import com.epam.listento.repository.TrackRepository
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -21,13 +18,12 @@ import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
 import java.lang.ref.WeakReference
-import java.net.URL
 
 class MediaSessionCallback(
     private val context: Context,
     private val musicRepo: MusicRepository,
     private val trackRepo: TrackRepository,
-    private val mediaSession: WeakReference<MediaSessionCompat>,
+    private val mediaSession: WeakReference<MediaSessionCompat?>,
     private val player: SimpleExoPlayer,
     private val stateBuilder: PlaybackStateCompat.Builder,
     private val onComplete: (Int) -> Unit
@@ -118,6 +114,9 @@ class MediaSessionCallback(
     override fun onSkipToNext() {
         super.onSkipToNext()
 
+        if (player.playWhenReady) {
+            player.playWhenReady = false
+        }
         val track = musicRepo.getNext()
         trackRepo.fecthTrack(track.id) { response ->
             response.body?.let {
@@ -133,6 +132,9 @@ class MediaSessionCallback(
     override fun onSkipToPrevious() {
         super.onSkipToPrevious()
 
+        if (player.playWhenReady) {
+            player.playWhenReady = false
+        }
         val track = musicRepo.getPrevious()
         trackRepo.fecthTrack(track.id) { response ->
             response.body?.let {
@@ -144,6 +146,11 @@ class MediaSessionCallback(
                 onComplete(PlaybackStateCompat.STATE_PLAYING)
             }
         }
+    }
+
+    override fun onSeekTo(pos: Long) {
+        super.onSeekTo(pos)
+        player.seekTo(pos)
     }
 
     private fun initAudioFocusRequest(): AudioFocusRequest? {

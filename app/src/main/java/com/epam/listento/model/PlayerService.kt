@@ -43,10 +43,10 @@ class PlayerService : Service() {
     @Inject
     lateinit var trackRepo: TrackRepository
 
-    private lateinit var mediaSession: MediaSessionCompat
+    private var mediaSession: MediaSessionCompat? = null
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
     private lateinit var player: SimpleExoPlayer
-    private lateinit var mediaSessionCallback: MediaSessionCallback
+    private var mediaSessionCallback: MediaSessionCallback? = null
 
     private val channelId by lazy { createNotificationChannel() }
     private val activityIntent by lazy { Intent(applicationContext, MainActivity::class.java) }
@@ -57,8 +57,8 @@ class PlayerService : Service() {
     }
 
     override fun onCreate() {
-        super.onCreate()
         App.component.inject(this)
+        super.onCreate()
 
         stateBuilder = PlaybackStateCompat.Builder()
             .setActions(
@@ -90,7 +90,7 @@ class PlayerService : Service() {
             }
         }
 
-        mediaSession.setCallback(mediaSessionCallback)
+        mediaSession?.setCallback(mediaSessionCallback)
 
         registerReceiver(becomeNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
     }
@@ -118,7 +118,9 @@ class PlayerService : Service() {
         super.onDestroy()
         Log.d(TAG, "ON DESTROY")
         unregisterReceiver(becomeNoisyReceiver)
-        mediaSession.release()
+        mediaSessionCallback = null
+        mediaSession?.release()
+        mediaSession = null
         player.release()
     }
 
@@ -162,7 +164,7 @@ class PlayerService : Service() {
             setStyle(
                 MediaStyle()
                     .setShowActionsInCompactView(0, 1, 2)
-                    .setMediaSession(mediaSession.sessionToken)
+                    .setMediaSession(mediaSession?.sessionToken)
             )
             fillNotificationWithMetadata(this)
         }.build()
@@ -198,14 +200,14 @@ class PlayerService : Service() {
     }
 
     private fun fillNotificationWithMetadata(builder: NotificationCompat.Builder): NotificationCompat.Builder {
-        val metadata = mediaSession.controller.metadata.description
-        return builder.setContentTitle(metadata.title)
-            .setContentText(metadata.subtitle)
-            .setLargeIcon(metadata.iconBitmap)
-            .setContentIntent(mediaSession.controller.sessionActivity)
+        val metadata = mediaSession?.controller?.metadata?.description
+        return builder.setContentTitle(metadata?.title)
+            .setContentText(metadata?.subtitle)
+            .setLargeIcon(metadata?.iconBitmap)
+            .setContentIntent(mediaSession?.controller?.sessionActivity)
             .setDeleteIntent(
                 MediaButtonReceiver.buildMediaButtonPendingIntent(applicationContext, PlaybackStateCompat.ACTION_STOP)
-            )
+            ) ?: builder
     }
 
     private fun refreshNotification() {
@@ -222,7 +224,7 @@ class PlayerService : Service() {
     }
 
     inner class PlayerBinder : Binder() {
-        fun getSessionToken(): MediaSessionCompat.Token? = mediaSession.sessionToken
+        fun getSessionToken(): MediaSessionCompat.Token? = mediaSession?.sessionToken
 
         fun changeSourceData(data: List<Track>) {
             if (musicRepo.isDataChanged(data)) {
@@ -232,15 +234,17 @@ class PlayerService : Service() {
 
         fun playTrack(track: Track) {
             musicRepo.setCurrent(track)
-            mediaSession.controller.transportControls.play()
+            mediaSession?.controller?.transportControls?.play()
         }
+
+        fun getProgress(): Long = player.currentPosition
     }
 
     private val becomeNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
-                    mediaSessionCallback.onPause()
+                    mediaSessionCallback?.onPause()
                 }
                 else -> return
             }
@@ -251,7 +255,7 @@ class PlayerService : Service() {
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
             super.onPlayerStateChanged(playWhenReady, playbackState)
             if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
-                mediaSessionCallback.onSkipToNext()
+                mediaSessionCallback?.onSkipToNext()
             }
         }
     }
