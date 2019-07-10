@@ -71,7 +71,7 @@ class PlayerService : Service() {
             )
 
         player = ExoPlayerFactory.newSimpleInstance(this).also {
-            //it.addListener(playerListener)
+            it.addListener(playerListener)
         }
         mediaSession = initMediaSession()
 
@@ -247,12 +247,12 @@ class PlayerService : Service() {
         }
     }
 
-//    private val playerListener = object : Player.EventListener {
-//        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-//            super.onPlayerStateChanged(playWhenReady, playbackState)
-//            if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
-//                mediaSessionCallback.onSkipToNext()
-//            }
-//        }
-//    }
+    private val playerListener = object : Player.EventListener {
+        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+            super.onPlayerStateChanged(playWhenReady, playbackState)
+            if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
+                mediaSessionCallback.onSkipToNext()
+            }
+        }
+    }
 }

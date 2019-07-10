@@ -64,9 +64,4 @@ class MainActivity : AppCompatActivity() {
             .replace(id, fragment)
             .commit()
     }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        // stopService(Intent(this, PlayerService::class.java))
-    }
 }
