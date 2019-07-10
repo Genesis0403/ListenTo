@@ -8,10 +8,13 @@ import android.widget.TextView
 import androidx.cardview.widget.CardView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
+import com.bumptech.glide.load.resource.bitmap.CenterCrop
+import com.bumptech.glide.load.resource.bitmap.RoundedCorners
+import com.bumptech.glide.request.RequestOptions
 import com.epam.listento.R
 import com.epam.listento.model.Track
 
-private const val TAG = "TRACKS_ADAPTER"
+private const val CORNERS_RADIUS = 16
 
 class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapter<TracksAdapter.TrackViewHolder>() {
 
@@ -52,6 +55,7 @@ class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapte
             .load(url)
             .fallback(R.drawable.no_photo_24dp)
             .error(R.drawable.no_photo_24dp)
+            .apply(RequestOptions().transform(CenterCrop(), RoundedCorners(CORNERS_RADIUS)))
             .into(imageView)
     }
 
