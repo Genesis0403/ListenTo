@@ -223,7 +223,6 @@ class RepositoryModule {
 
             private val tracks = mutableListOf<Track>()
             private var current = 0
-            private var job: Job? = null
 
             override fun isDataChanged(data: List<Track>): Boolean {
                 return !tracks.containsAll(data)

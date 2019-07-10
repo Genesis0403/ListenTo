@@ -10,9 +10,9 @@ class BottomNavigationAdapter(
 ) : FragmentsAdapter {
 
     override fun get(id: Int): Fragment {
-        if (fragments.containsKey(id) && fragments[id] != null) {
-            return fragments[id] as Fragment
+        if (!fragments.containsKey(id) && fragments[id] == null) {
+            throw IllegalStateException("$NO_SUCH_FRAGMENT_ERROR: $id")
         }
-        throw IllegalStateException("$NO_SUCH_FRAGMENT_ERROR: $id")
+        return fragments[id] as Fragment
     }
 }

@@ -12,6 +12,7 @@ private const val MEDIA_ROOT_ID = "LISTEN_TO_MEDIA_ROOT_ID"
 private const val TAG = "PLAYER_SERVICE"
 private const val REQUEST_CODE = 1337
 
+@Deprecated("Not used. See PlayerService.kt at ListenTo")
 class PlayerService : MediaBrowserServiceCompat() {
 
     private var mediaSession: MediaSessionCompat? = null
