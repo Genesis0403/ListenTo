@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">PlayerModule</string>
+    <string name="session_token">Listen_To_Session_Token</string>
+</resources>

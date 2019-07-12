@@ -5,5 +5,5 @@ import kotlinx.coroutines.Job
 import retrofit2.Response
 
 interface StorageRepository {
-    fun fetchStorage(storageDir: String, completion: (Response<DomainStorage>) -> Unit): Job
+    fun fetchStorage(storageDir: String, completion: (Response<DomainStorage>) -> Unit)
 }

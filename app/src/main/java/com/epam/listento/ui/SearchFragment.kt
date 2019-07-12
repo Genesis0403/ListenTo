@@ -1,7 +1,13 @@
 package com.epam.listento.ui
 
+import android.content.ComponentName
 import android.content.Context
+import android.content.Intent
+import android.content.ServiceConnection
 import android.os.Bundle
+import android.os.IBinder
+import android.support.v4.media.session.MediaControllerCompat
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,17 +24,18 @@ import androidx.recyclerview.widget.RecyclerView
 import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
+import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.utils.DebounceSearchListener
 import kotlinx.android.synthetic.main.tracks_fragment.*
 import javax.inject.Inject
 
-class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
+class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     companion object {
         private const val TAG = "TRACKS_FRAGMENT"
 
-        fun newInstance() = TracksFragment()
+        fun newInstance() = SearchFragment()
     }
 
     @Inject
@@ -37,7 +44,14 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
 
     private val tracksAdapter = TracksAdapter(this)
 
+    private var binder: PlayerService.PlayerBinder? = null
+    private var controller: MediaControllerCompat? = null
+
     override fun onClick(track: Track) {
+        binder?.let { // TODO rework data transaction
+            it.changeSourceData(mainViewModel.tracks.value?.body ?: emptyList())
+            it.playTrack(track)
+        }
     }
 
     override fun onAttach(context: Context) {
@@ -48,6 +62,7 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
+        activity?.bindService(Intent(activity, PlayerService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
 
     override fun onCreateView(
@@ -76,7 +91,7 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
         }
 
         mainViewModel.tracks.observe(this, Observer<ApiResponse<List<Track>>> { response ->
-            initObserver(response)
+            observeTrackList(response)
         })
     }
 
@@ -86,18 +101,43 @@ class TracksFragment : Fragment(), TracksAdapter.OnClickListener {
                 progress.visibility = ProgressBar.VISIBLE
                 mainViewModel.fetchTracks(query)
                 mainViewModel.lastQuery = query
-            } else {
-                //TODO implement job cancel when empty
             }
         })
     }
 
-    private fun initObserver(response: ApiResponse<List<Track>>) {
+    private fun observeTrackList(response: ApiResponse<List<Track>>) {
         if (response.status.isSuccess()) {
             progress.visibility = ProgressBar.GONE
             tracksAdapter.setTracks(response.body ?: emptyList())
         } else {
             Toast.makeText(context, getString(R.string.failed_tracks_toast), Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "ON DESTROY")
+        binder = null
+        controller = null
+        activity?.unbindService(connection)
+    }
+
+    private val connection = object : ServiceConnection {
+        override fun onServiceDisconnected(name: ComponentName?) {
+            controller = null
+            binder = null
+        }
+
+        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            binder = service as PlayerService.PlayerBinder
+            binder?.let {
+                val token = it.getSessionToken() ?: return
+                try {
+                    controller = MediaControllerCompat(requireActivity(), token)
+                } catch (e: Exception) {
+                    controller = null
+                }
+            }
         }
     }
 }

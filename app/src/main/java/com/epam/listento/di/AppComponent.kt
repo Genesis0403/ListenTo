@@ -1,8 +1,10 @@
 package com.epam.listento.di
 
 import android.app.Application
+import com.epam.listento.model.PlayerService
 import com.epam.listento.ui.MainActivity
-import com.epam.listento.ui.TracksFragment
+import com.epam.listento.ui.PlayerFragment
+import com.epam.listento.ui.SearchFragment
 import dagger.BindsInstance
 import dagger.Component
 import javax.inject.Singleton
@@ -24,5 +26,7 @@ interface AppComponent {
     }
 
     fun inject(activity: MainActivity)
-    fun inject(fragment: TracksFragment)
+    fun inject(fragment: SearchFragment)
+    fun inject(fragment: PlayerFragment)
+    fun inject(service: PlayerService)
 }

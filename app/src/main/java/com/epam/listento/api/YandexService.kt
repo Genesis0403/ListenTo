@@ -1,13 +1,14 @@
 package com.epam.listento.api
 
 import com.epam.listento.api.model.ApiStorage
+import com.epam.listento.api.model.ApiTrack
+import com.epam.listento.api.model.TrackRequest
 import com.epam.listento.api.model.TracksRequest
 import com.epam.listento.utils.Json
 import com.epam.listento.utils.Xml
+import okhttp3.ResponseBody
 import retrofit2.Response
-import retrofit2.http.GET
-import retrofit2.http.Path
-import retrofit2.http.Query
+import retrofit2.http.*
 
 interface YandexService {
 
@@ -23,11 +24,13 @@ interface YandexService {
         @Path("storageDir") storageDir: String
     ): Response<ApiStorage>
 
-    @GET("http://{host}/get-mp3/{s}/{ts}{path}")
-    fun fetchTrack(
-        host: String,
-        s: String,
-        ts: String,
-        path: String
-    )
+    @GET
+    @Streaming
+    suspend fun downloadTrack(@Url url: String): Response<ResponseBody>
+
+    @Json
+    @GET("https://music.yandex.ru/handlers/track.jsx")
+    suspend fun fetchTrack(
+        @Query("track") id: Int
+    ): Response<TrackRequest>
 }
