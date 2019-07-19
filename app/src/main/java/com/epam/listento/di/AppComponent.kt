@@ -4,6 +4,7 @@ import android.app.Application
 import com.epam.listento.model.PlayerService
 import com.epam.listento.ui.MainActivity
 import com.epam.listento.ui.PlayerFragment
+import com.epam.listento.ui.PlaylistFragment
 import com.epam.listento.ui.SearchFragment
 import dagger.BindsInstance
 import dagger.Component
@@ -29,4 +30,5 @@ interface AppComponent {
     fun inject(fragment: SearchFragment)
     fun inject(fragment: PlayerFragment)
     fun inject(service: PlayerService)
+    fun inject(fragment: PlaylistFragment)
 }

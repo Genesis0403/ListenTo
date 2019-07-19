@@ -54,25 +54,19 @@ class MediaSessionCallback(
         audioFocusRequest = initAudioFocusRequest()
     }
 
+    private fun loadTrackFromDevice(track: Track) {
+        val uri = trackRepo.fetchTrackUri(track)
+        prepareToPlay(uri)
+        player.playWhenReady = true
+        onComplete(PlaybackStateCompat.STATE_PLAYING)
+    }
+
     override fun onPlay() {
         super.onPlay()
         context.startService(Intent(context.applicationContext, PlayerService::class.java))
 
-        val track = musicRepo.getCurrent()
-        trackRepo.fecthTrack(track.id) { response ->
-            response.body?.let {
-                val metadata = fillMetadataFromTrack(it)
-                mediaSession.get()?.setMetadata(metadata)
-
-                if (mediaSession.get()?.controller?.playbackState?.state != PlaybackStateCompat.STATE_PAUSED) {
-                    downloadTrack(it)
-                } else {
-                    player.playWhenReady = true
-                }
-
-                updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
-                onComplete(PlaybackStateCompat.STATE_PLAYING)
-            }
+        if (player.playWhenReady) {
+            player.playWhenReady = false
         }
 
         if (!isAudioFocused) {
@@ -84,6 +78,28 @@ class MediaSessionCallback(
                     AudioManager.STREAM_MUSIC,
                     AudioManager.AUDIOFOCUS_GAIN
                 )
+            }
+        }
+
+        val track = musicRepo.getCurrent()
+        val metadata = fillMetadataFromTrack(track)
+        mediaSession.get()?.setMetadata(metadata)
+        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
+
+        if (didLoadFromCache(track)) {
+            return
+        }
+
+        trackRepo.fetchTrack(track.id) { response ->
+            response.body?.let {
+
+                if (mediaSession.get()?.controller?.playbackState?.state != PlaybackStateCompat.STATE_PAUSED) {
+                    downloadTrack(it)
+                } else {
+                    player.playWhenReady = true
+                }
+
+                onComplete(PlaybackStateCompat.STATE_PLAYING)
             }
         }
     }
@@ -118,12 +134,17 @@ class MediaSessionCallback(
             player.playWhenReady = false
         }
         val track = musicRepo.getNext()
-        trackRepo.fecthTrack(track.id) { response ->
+        val metadata = fillMetadataFromTrack(track)
+        mediaSession.get()?.setMetadata(metadata)
+        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
+
+        if (didLoadFromCache(track)) {
+            return
+        }
+
+        trackRepo.fetchTrack(track.id) { response ->
             response.body?.let {
-                val metadata = fillMetadataFromTrack(it)
-                mediaSession.get()?.setMetadata(metadata)
                 downloadTrack(it)
-                updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
                 onComplete(PlaybackStateCompat.STATE_PLAYING)
             }
         }
@@ -136,11 +157,16 @@ class MediaSessionCallback(
             player.playWhenReady = false
         }
         val track = musicRepo.getPrevious()
-        trackRepo.fecthTrack(track.id) { response ->
-            response.body?.let {
-                val metadata = fillMetadataFromTrack(it)
-                mediaSession.get()?.setMetadata(metadata)
+        val metadata = fillMetadataFromTrack(track)
+        mediaSession.get()?.setMetadata(metadata)
+        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
 
+        if (didLoadFromCache(track)) {
+            return
+        }
+
+        trackRepo.fetchTrack(track.id) { response ->
+            response.body?.let {
                 downloadTrack(it)
                 updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
                 onComplete(PlaybackStateCompat.STATE_PLAYING)
@@ -168,12 +194,22 @@ class MediaSessionCallback(
         }
     }
 
-    private fun fillMetadataFromTrack(track: NotificationTrack): MediaMetadataCompat {
+    private fun didLoadFromCache(track: Track): Boolean {
+        return if (trackRepo.checkTrackExistence(track)) {
+            loadTrackFromDevice(track)
+            trackRepo.cacheTrack(track)
+            true
+        } else {
+            false
+        }
+    }
+
+    private fun fillMetadataFromTrack(track: Track): MediaMetadataCompat {
         return metadataBuilder
-            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist)
+            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist?.name)
             .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
             .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration)
-            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, track.coverBitmap)
+            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, track.album?.albumCover)
             .build()
     }
 

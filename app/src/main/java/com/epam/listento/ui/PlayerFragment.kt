@@ -43,6 +43,7 @@ class PlayerFragment : Fragment() {
         private const val DEFAULT_TITLE = "None"
         private const val SECOND: Long = 1000
         private const val DELAY: Long = 0
+        private const val CORNERS_RADIUS = 28
 
         fun newInstance() = PlayerFragment()
     }
@@ -177,7 +178,7 @@ class PlayerFragment : Fragment() {
                 // TODO fix duration cast from Long to Int
                 val duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).toInt()
                 trackTimeProgress.max = duration
-                loadImage(iconBitmap)
+                loadImage(iconUri.toString())
                 positiveTiming.text = DEFAULT_TIMING
                 negativeTiming.text = MsMapper.convert(duration)
             }
@@ -191,12 +192,12 @@ class PlayerFragment : Fragment() {
         }
     }
 
-    private fun loadImage(bitmap: Bitmap?) {
+    private fun loadImage(url: String?) {
         Glide.with(requireActivity())
-            .load(bitmap)
+            .load(url)
             .error(R.drawable.no_photo_24dp)
             .fallback(R.drawable.no_photo_24dp)
-            .apply(RequestOptions().transform(CenterCrop(), RoundedCorners(28)))
+            .apply(RequestOptions().transform(CenterCrop(), RoundedCorners(CORNERS_RADIUS)))
             .into(albumCover)
     }
 

@@ -12,7 +12,7 @@ fun mapTrack(track: DomainTrack?): Track? {
     return track?.let {
         Track(
             track.id,
-            durationMapper(track.durationMs ?: 0),
+            track.durationMs ?: 0,
             track.title ?: "N/A",
             mapArtist(track.artists?.firstOrNull()),
             track.storageDir ?: "",
