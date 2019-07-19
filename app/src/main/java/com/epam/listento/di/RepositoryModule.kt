@@ -1,13 +1,14 @@
 package com.epam.listento.di
 
 import android.app.Application
-import android.content.Context
-import android.graphics.BitmapFactory
 import android.net.Uri
+import android.os.Environment
 import android.util.Log
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.YandexService
 import com.epam.listento.api.model.*
+import com.epam.listento.db.AppDatabase
+import com.epam.listento.db.TracksDao
 import com.epam.listento.domain.*
 import com.epam.listento.model.NotificationTrack
 import com.epam.listento.model.Track
@@ -20,12 +21,12 @@ import okhttp3.ResponseBody
 import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
-import java.net.URL
 import javax.inject.Singleton
 
 @Module(
     includes = [
-        ApiModule::class
+        ApiModule::class,
+        DbModule::class
     ]
 )
 class RepositoryModule {
@@ -35,15 +36,19 @@ class RepositoryModule {
         private const val STORAGE_REPOSITORY = "STORAGE_REPOSITORY"
         private const val FILE_REPOSITORY = "FILE_REPOSITORY"
         private const val PREFIX_PLACEHOLDER = "track_placeholder"
+        private const val LOCAL_DIRECTORY = "ListenToMusic"
     }
 
     @Singleton
     @Provides
     fun provideTracksRepo(
         service: YandexService,
-        mappers: MusicMapper
+        mappers: MusicMapper,
+        db: AppDatabase,
+        tracksDao: TracksDao
     ): TracksRepository {
         return object : TracksRepository {
+
             override fun fetchTracks(
                 text: String,
                 completion: (Response<List<DomainTrack>>) -> Unit
@@ -59,6 +64,22 @@ class RepositoryModule {
                         completion(response)
                     } catch (e: Exception) {
                         Log.e(TRACKS_REPOSITORY, "$e")
+                    }
+                }
+            }
+
+            override fun cacheTrack(track: Track) {
+                GlobalScope.launch(Dispatchers.IO) {
+                    db.runInTransaction {
+                        tracksDao.insertTrack(track)
+                    }
+                }
+            }
+
+            override fun uncacheTrack(track: Track) {
+                GlobalScope.launch(Dispatchers.IO) {
+                    db.runInTransaction {
+                        tracksDao.deleteTrackById(track.id)
                     }
                 }
             }
@@ -161,12 +182,16 @@ class RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideFileRepository(service: YandexService, context: Application): FileRepository {
+    fun provideFileRepository(
+        service: YandexService,
+        context: Application
+    ): FileRepository {
         return object : FileRepository {
 
             private var job: Job? = null
 
             override fun downloadTrack(
+                trackName: String,
                 audioUrl: String,
                 completion: (Response<Uri>) -> Unit
             ) {
@@ -176,7 +201,7 @@ class RepositoryModule {
                         val response = service.downloadTrack(audioUrl)
                         if (response.isSuccessful) {
                             val url = response.body()?.let {
-                                downloadFile(it, context)
+                                downloadFile(trackName, it)
                             }
                             completion(Response.success(url))
                         } else {
@@ -188,8 +213,8 @@ class RepositoryModule {
                 }
             }
 
-            private fun downloadFile(response: ResponseBody, context: Context): Uri {
-                val file = File.createTempFile(PREFIX_PLACEHOLDER, null, context.cacheDir)
+            private fun downloadFile(trackName: String, response: ResponseBody): Uri {
+                val file = createFile(trackName)
                 try {
                     val fileReader = ByteArray(4096)
                     response.byteStream().use { inputStream ->
@@ -209,6 +234,18 @@ class RepositoryModule {
                 }
                 return Uri.fromFile(file)
             }
+
+            private fun createFile(trackName: String): File {
+                val dir = File(
+                    context.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
+                    LOCAL_DIRECTORY
+                )
+                if (!dir.exists()) {
+                    dir.mkdirs()
+                }
+                return File(dir, trackName)
+            }
+
         }
     }
 
@@ -268,11 +305,13 @@ class RepositoryModule {
             }
 
             override fun downloadTrack(track: NotificationTrack, completion: (ApiResponse<Uri>) -> Unit) {
+                val trackName = "${track.artist}-${track.title}.mp3"
                 storageRepository.fetchStorage(track.storageDir) { response ->
                     if (response.isSuccessful) {
                         response.body()?.let {
                             val downloadUrl = audioRepository.fetchAudioUrl(it)
-                            onDownloadResponse(downloadUrl) { result ->
+
+                            onDownloadResponse(trackName, downloadUrl) { result ->
                                 CoroutineScope(Dispatchers.Main).launch {
                                     completion(result)
                                 }
@@ -286,8 +325,12 @@ class RepositoryModule {
                 }
             }
 
-            private fun onDownloadResponse(downloadUrl: String, completion: (ApiResponse<Uri>) -> Unit) {
-                fileRepository.downloadTrack(downloadUrl) { response ->
+            private fun onDownloadResponse(
+                trackName: String,
+                downloadUrl: String,
+                completion: (ApiResponse<Uri>) -> Unit
+            ) {
+                fileRepository.downloadTrack(trackName, downloadUrl) { response ->
                     completion(
                         if (response.isSuccessful) {
                             ApiResponse.success(response.body())
@@ -302,12 +345,17 @@ class RepositoryModule {
 
     @Singleton
     @Provides
-    fun provideTrackRepo(service: YandexService): TrackRepository {
+    fun provideTrackRepo(
+        app: Application,
+        service: YandexService,
+        db: AppDatabase,
+        dao: TracksDao
+    ): TrackRepository {
         return object : TrackRepository {
 
             private var job: Job? = null
 
-            override fun fecthTrack(
+            override fun fetchTrack(
                 id: Int,
                 completion: (ApiResponse<NotificationTrack>) -> Unit
             ) {
@@ -327,8 +375,7 @@ class RepositoryModule {
 
             private fun mapToNotification(track: ApiTrack): NotificationTrack {
                 val apiUrl = track.albums?.first()?.coverUri ?: track.artists?.first()?.cover?.uri ?: ""
-                val url = URL("https://${apiUrl.replace("%%", "700x700")}")
-                val bitmap = BitmapFactory.decodeStream(url.openStream())
+                val url = "https://${apiUrl.replace("%%", "700x700")}"
                 return track.run {
                     NotificationTrack(
                         id,
@@ -336,9 +383,37 @@ class RepositoryModule {
                         title ?: "None",
                         artists?.first()?.name ?: "None",
                         durationMs ?: 0,
-                        bitmap
+                        url
                     )
                 }
+            }
+
+            override fun cacheTrack(track: Track) {
+                GlobalScope.launch(Dispatchers.IO) {
+                    db.runInTransaction {
+                        dao.insertTrack(track)
+                    }
+                }
+            }
+
+            override fun checkTrackExistence(track: Track): Boolean {
+                val file = getTrackFile(track)
+                return file.exists()
+            }
+
+            override fun fetchTrackUri(track: Track): Uri {
+                if (!checkTrackExistence(track)) return Uri.EMPTY
+                val file = getTrackFile(track)
+                return Uri.fromFile(file)
+            }
+
+            private fun getTrackFile(track: Track): File {
+                val name = "${track.artist?.name}-${track.title}.mp3"
+                val dir = File(
+                    app.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
+                    LOCAL_DIRECTORY
+                )
+                return File(dir, name)
             }
         }
     }

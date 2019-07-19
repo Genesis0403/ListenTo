@@ -13,6 +13,7 @@ import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
 import com.epam.listento.R
 import com.epam.listento.model.Track
+import com.epam.listento.model.durationToString
 
 private const val CORNERS_RADIUS = 16
 
@@ -45,7 +46,7 @@ class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapte
         holder.apply {
             artist.text = item.artist?.name
             title.text = item.title
-            duration.text = item.duration
+            duration.text = item.durationToString()
             loadImage(cover, item.album?.thumbnailCover)
         }
     }

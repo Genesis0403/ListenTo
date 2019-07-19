@@ -4,9 +4,13 @@
           android:title="@string/search_option"
           android:icon="@drawable/search_icon_24dp"
     />
-    <item android:id="@+id/playerFrament"
+    <item android:id="@+id/cacheFragment"
+          android:title="@string/cache"
+          android:icon="@drawable/playlist_icon_24dp"
+    />
+    <item android:id="@+id/playerFragment"
           android:title="@string/player_option"
-          android:icon="@drawable/player_icon_24dp"
+          android:icon="@drawable/player_icon_black_24dp"
           android:checked="true"
     />
     <item android:id="@+id/settings"

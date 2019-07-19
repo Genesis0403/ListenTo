@@ -12,4 +12,7 @@
     <string name="play_action">Play</string>
     <string name="pause_action">Pause</string>
     <string name="next_action">Next</string>
+    <string name="playlist">Playlist</string>
+    <string name="dbName">ListenToDatabase</string>
+    <string name="cache">Cache</string>
 </resources>

@@ -3,7 +3,6 @@ package com.epam.listento.ui
 import android.os.Bundle
 import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import com.epam.listento.App
@@ -23,7 +22,8 @@ class MainActivity : AppCompatActivity() {
     private val fragmentsAdapter = BottomNavigationAdapter(
         mapOf(
             R.id.searchFragment to SearchFragment.newInstance(),
-            R.id.playerFrament to PlayerFragment.newInstance()
+            R.id.playerFragment to PlayerFragment.newInstance(),
+            R.id.cacheFragment to PlaylistFragment.newInstance()
         )
     )
 
@@ -33,7 +33,9 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         mainViewModel = ViewModelProviders.of(this, factory)[MainViewModel::class.java]
 
-        savedInstanceState ?: loadFragment(R.id.contentContainer, fragmentsAdapter[R.id.searchFragment])
+        savedInstanceState ?: supportFragmentManager.beginTransaction()
+            .replace(R.id.contentContainer, fragmentsAdapter[R.id.searchFragment])
+            .commit()
 
         navigationBar.setOnNavigationItemSelectedListener {
             moveToFragment(it)
@@ -43,25 +45,27 @@ class MainActivity : AppCompatActivity() {
     private fun moveToFragment(item: MenuItem): Boolean {
         when (item.itemId) {
             R.id.searchFragment -> {
-                if (navigationBar.selectedItemId != R.id.searchFragment) {
-                    loadFragment(R.id.contentContainer, fragmentsAdapter[R.id.searchFragment])
-                }
+                loadFragment(R.id.contentContainer, R.id.searchFragment)
             }
-            R.id.playerFrament -> {
-                if (navigationBar.selectedItemId != R.id.playerFrament) {
-                    loadFragment(R.id.contentContainer, fragmentsAdapter[R.id.playerFrament])
-                }
+            R.id.playerFragment -> {
+                loadFragment(R.id.contentContainer, R.id.playerFragment)
+            }
+            R.id.cacheFragment -> {
+                loadFragment(R.id.contentContainer, R.id.cacheFragment)
             }
             R.id.settings -> {
+                //TODO implement preferences
             }
             else -> return false
         }
         return true
     }
 
-    private fun loadFragment(id: Int, fragment: Fragment) {
-        supportFragmentManager.beginTransaction()
-            .replace(id, fragment)
-            .commit()
+    private fun loadFragment(containerId: Int, fragmentId: Int) {
+        if (navigationBar.selectedItemId != fragmentId) {
+            supportFragmentManager.beginTransaction()
+                .replace(containerId, fragmentsAdapter[fragmentId])
+                .commit()
+        }
     }
 }
