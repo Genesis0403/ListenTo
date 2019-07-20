@@ -5,17 +5,18 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import com.epam.listento.domain.DomainTrack
 import com.epam.listento.model.Track
 
 @Dao
 interface TracksDao {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    fun insertTrack(track: Track)
+    fun insertTrack(track: DomainTrack)
 
-    @Query("SELECT * FROM Track")
-    fun getTracks(): LiveData<List<Track>>
+    @Query("SELECT * FROM DomainTrack")
+    fun getTracks(): LiveData<List<DomainTrack>>
 
-    @Query("DELETE FROM Track where id = :id")
+    @Query("DELETE FROM DomainTrack where id = :id")
     fun deleteTrackById(id: Int)
 }

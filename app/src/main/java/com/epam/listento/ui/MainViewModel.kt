@@ -2,20 +2,24 @@ package com.epam.listento.ui
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.mapTrack
 import com.epam.listento.db.TracksDao
+import com.epam.listento.model.DbInteractor
 import com.epam.listento.model.Track
 import com.epam.listento.repository.TracksRepository
 import com.epam.listento.utils.ContextProvider
+import com.epam.listento.utils.PlatformMappers
 import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 class MainViewModel @Inject constructor(
     private val contextProvider: ContextProvider,
     private val tracksRepo: TracksRepository,
-    tracksDao: TracksDao
+    dao: TracksDao,
+    mappers: PlatformMappers
 ) : ViewModel() {
 
     var lastQuery: String? = null
@@ -24,7 +28,12 @@ class MainViewModel @Inject constructor(
     private val _tracks: MutableLiveData<ApiResponse<List<Track>>> = MutableLiveData()
     val tracks: LiveData<ApiResponse<List<Track>>> get() = _tracks
 
-    val cachedTracks: LiveData<List<Track>> = tracksDao.getTracks()
+    val cachedTracks: LiveData<List<Track>> = Transformations.switchMap(dao.getTracks()) { domain ->
+        val tracks = domain.mapNotNull { mappers.mapTrack(it) }.toList()
+        MutableLiveData<List<Track>>().apply {
+            value = tracks
+        }
+    }
 
     fun fetchTracks(text: String) {
         job?.cancel()
