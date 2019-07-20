@@ -28,6 +28,10 @@ import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 
@@ -43,7 +47,7 @@ class PlayerService : Service() {
     lateinit var musicRepo: MusicRepository
 
     @Inject
-    lateinit var trackRepo: TrackRepository
+    lateinit var downloadInteractor: DownloadInteractor
 
     private var mediaSession: MediaSessionCompat? = null
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
@@ -80,7 +84,7 @@ class PlayerService : Service() {
         mediaSessionCallback = MediaSessionCallback(
             applicationContext,
             musicRepo,
-            trackRepo,
+            downloadInteractor,
             WeakReference(mediaSession),
             player,
             stateBuilder

@@ -2,6 +2,7 @@ package com.epam.listento.model
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.BitmapFactory
 import android.media.AudioAttributes
 import android.media.AudioFocusRequest
 import android.media.AudioManager
@@ -12,17 +13,21 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import com.epam.listento.R
 import com.epam.listento.repository.MusicRepository
-import com.epam.listento.repository.TrackRepository
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
 import com.google.android.exoplayer2.util.Util
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.lang.ref.WeakReference
+import java.net.URL
 
 class MediaSessionCallback(
     private val context: Context,
     private val musicRepo: MusicRepository,
-    private val trackRepo: TrackRepository,
+    private val downloadInteractor: DownloadInteractor,
     private val mediaSession: WeakReference<MediaSessionCompat?>,
     private val player: SimpleExoPlayer,
     private val stateBuilder: PlaybackStateCompat.Builder,
@@ -54,13 +59,6 @@ class MediaSessionCallback(
         audioFocusRequest = initAudioFocusRequest()
     }
 
-    private fun loadTrackFromDevice(track: Track) {
-        val uri = trackRepo.fetchTrackUri(track)
-        prepareToPlay(uri)
-        player.playWhenReady = true
-        onComplete(PlaybackStateCompat.STATE_PLAYING)
-    }
-
     override fun onPlay() {
         super.onPlay()
         context.startService(Intent(context.applicationContext, PlayerService::class.java))
@@ -82,25 +80,21 @@ class MediaSessionCallback(
         }
 
         val track = musicRepo.getCurrent()
-        val metadata = fillMetadataFromTrack(track)
-        mediaSession.get()?.setMetadata(metadata)
-        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
+        fillMetadataFromTrack(track) { metadata ->
+            mediaSession.get()?.setMetadata(metadata)
+            updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
 
-        if (didLoadFromCache(track)) {
-            return
-        }
-
-        trackRepo.fetchTrack(track.id) { response ->
-            response.body?.let {
-
-                if (mediaSession.get()?.controller?.playbackState?.state != PlaybackStateCompat.STATE_PAUSED) {
-                    downloadTrack(it)
-                } else {
-                    player.playWhenReady = true
+            if (mediaSession.get()?.controller?.playbackState?.state != PlaybackStateCompat.STATE_PAUSED) {
+                downloadInteractor.downloadTrack(track, true) { result ->
+                    if (result.status.isSuccess() && result.body != null) {
+                        prepareToPlay(result.body)
+                        player.playWhenReady = true
+                    }
                 }
-
-                onComplete(PlaybackStateCompat.STATE_PLAYING)
+            } else {
+                player.playWhenReady = true
             }
+            onComplete(PlaybackStateCompat.STATE_PLAYING)
         }
     }
 
@@ -133,18 +127,18 @@ class MediaSessionCallback(
         if (player.playWhenReady) {
             player.playWhenReady = false
         }
+
         val track = musicRepo.getNext()
-        val metadata = fillMetadataFromTrack(track)
-        mediaSession.get()?.setMetadata(metadata)
-        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
+        fillMetadataFromTrack(track) { metadata ->
 
-        if (didLoadFromCache(track)) {
-            return
-        }
+            mediaSession.get()?.setMetadata(metadata)
+            updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
 
-        trackRepo.fetchTrack(track.id) { response ->
-            response.body?.let {
-                downloadTrack(it)
+            downloadInteractor.downloadTrack(track, true) { result ->
+                if (result.status.isSuccess() && result.body != null) {
+                    prepareToPlay(result.body)
+                    player.playWhenReady = true
+                }
                 onComplete(PlaybackStateCompat.STATE_PLAYING)
             }
         }
@@ -157,18 +151,15 @@ class MediaSessionCallback(
             player.playWhenReady = false
         }
         val track = musicRepo.getPrevious()
-        val metadata = fillMetadataFromTrack(track)
-        mediaSession.get()?.setMetadata(metadata)
-        updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
+        fillMetadataFromTrack(track) { metadata ->
+            mediaSession.get()?.setMetadata(metadata)
+            updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
 
-        if (didLoadFromCache(track)) {
-            return
-        }
-
-        trackRepo.fetchTrack(track.id) { response ->
-            response.body?.let {
-                downloadTrack(it)
-                updateSessionData(true, PlaybackStateCompat.STATE_PLAYING)
+            downloadInteractor.downloadTrack(track, true) { result ->
+                if (result.status.isSuccess() && result.body != null) {
+                    prepareToPlay(result.body)
+                    player.playWhenReady = true
+                }
                 onComplete(PlaybackStateCompat.STATE_PLAYING)
             }
         }
@@ -194,30 +185,27 @@ class MediaSessionCallback(
         }
     }
 
-    private fun didLoadFromCache(track: Track): Boolean {
-        return if (trackRepo.checkTrackExistence(track)) {
-            loadTrackFromDevice(track)
-            trackRepo.cacheTrack(track)
-            true
-        } else {
-            false
-        }
-    }
-
-    private fun fillMetadataFromTrack(track: Track): MediaMetadataCompat {
-        return metadataBuilder
-            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist?.name)
-            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
-            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration)
-            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, track.album?.albumCover)
-            .build()
-    }
-
-    private fun downloadTrack(track: NotificationTrack) {
-        musicRepo.downloadTrack(track) { response ->
-            if (response.status.isSuccess() && response.body != null) {
-                prepareToPlay(response.body)
-                player.playWhenReady = true
+    private fun fillMetadataFromTrack(
+        track: Track,
+        completion: (MediaMetadataCompat) -> Unit
+    ) {
+        GlobalScope.launch(Dispatchers.IO) {
+            val url = URL(track.album?.albumCover)
+            val bitmap =
+                try {
+                    BitmapFactory.decodeStream(url.openStream()) //TODO move to interactor
+                } catch (e: Exception) {
+                    null
+                }
+            val metadata = metadataBuilder
+                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist?.name)
+                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
+                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration)
+                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, track.album?.albumCover)
+                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
+                .build()
+            withContext(Dispatchers.Main) {
+                completion(metadata)
             }
         }
     }

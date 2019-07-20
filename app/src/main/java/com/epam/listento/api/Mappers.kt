@@ -6,7 +6,6 @@ import com.epam.listento.domain.DomainTrack
 import com.epam.listento.model.Album
 import com.epam.listento.model.Artist
 import com.epam.listento.model.Track
-import java.util.concurrent.TimeUnit
 
 fun mapTrack(track: DomainTrack?): Track? {
     return track?.let {
@@ -48,14 +47,6 @@ fun mapArtist(artist: DomainArtist?): Artist? {
     }
 }
 
-private fun mapUrl(url: String, replacement: String): String {
+fun mapUrl(url: String, replacement: String): String {
     return "https://" + url.replace("%%", replacement)
-}
-
-fun durationMapper(duration: Long): String {
-    return String.format(
-        "%d:%02d",
-        TimeUnit.MILLISECONDS.toMinutes(duration) % TimeUnit.HOURS.toMinutes(1),
-        TimeUnit.MILLISECONDS.toSeconds(duration) % TimeUnit.MINUTES.toSeconds(1)
-    )
 }
