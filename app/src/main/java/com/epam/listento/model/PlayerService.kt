@@ -9,6 +9,7 @@ import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
@@ -35,7 +36,11 @@ import kotlinx.coroutines.launch
 import java.lang.ref.WeakReference
 import javax.inject.Inject
 
-class PlayerService : Service() {
+class PlayerService : IntentService(TAG) {
+
+    override fun onHandleIntent(intent: Intent?) {
+        MediaButtonReceiver.handleIntent(mediaSession, intent)
+    }
 
     private companion object {
         private const val TAG = "PLAYER_SERVICE"
@@ -85,10 +90,12 @@ class PlayerService : Service() {
             applicationContext,
             musicRepo,
             downloadInteractor,
-            WeakReference(mediaSession),
-            player,
-            stateBuilder
-        ) { state ->
+            player
+        ) { metadata, isActive, state ->
+            if (metadata != null) {
+                mediaSession?.setMetadata(metadata)
+            }
+            updateSessionData(isActive, state)
             currentState = state
             refreshNotification()
             if (state == PlaybackStateCompat.STATE_STOPPED) {
@@ -99,6 +106,19 @@ class PlayerService : Service() {
         mediaSession?.setCallback(mediaSessionCallback)
 
         registerReceiver(becomeNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+    }
+
+    private fun updateSessionData(isActive: Boolean, state: Int) {
+        mediaSession?.let {
+            it.isActive = isActive
+            it.setPlaybackState(
+                stateBuilder.setState(
+                    state,
+                    PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
+                    1f
+                ).build()
+            )
+        }
     }
 
     private fun initMediaSession(): MediaSessionCompat {
@@ -128,11 +148,6 @@ class PlayerService : Service() {
         mediaSession?.release()
         mediaSession = null
         player.release()
-    }
-
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        MediaButtonReceiver.handleIntent(mediaSession, intent)
-        return super.onStartCommand(intent, flags, startId)
     }
 
     private fun createNotification(): Notification { // TODO move to another class?
