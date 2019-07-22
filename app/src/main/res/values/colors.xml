@@ -5,4 +5,5 @@
     <color name="colorAccent">#D81B60</color>
     <color name="whiteColor">#ffffff</color>
     <color name="darkColor">#000000</color>
+    <color name="uncheckedIcon">#ACACAC</color>
 </resources>

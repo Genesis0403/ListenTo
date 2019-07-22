@@ -1,12 +1,15 @@
 package com.epam.listento.ui
 
 import android.os.Bundle
-import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
+import androidx.navigation.findNavController
+import androidx.navigation.ui.setupWithNavController
 import com.epam.listento.App
 import com.epam.listento.R
+import com.epam.listento.utils.DebounceSearchListener
 import kotlinx.android.synthetic.main.activity_main.*
 import javax.inject.Inject
 
@@ -19,53 +22,24 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var mainViewModel: MainViewModel
 
-    private val fragmentsAdapter = BottomNavigationAdapter(
-        mapOf(
-            R.id.searchFragment to SearchFragment.newInstance(),
-            R.id.playerFragment to PlayerFragment.newInstance(),
-            R.id.cacheFragment to PlaylistFragment.newInstance()
-        )
-    )
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App.component.inject(this)
         setContentView(R.layout.activity_main)
         mainViewModel = ViewModelProviders.of(this, factory)[MainViewModel::class.java]
 
-        savedInstanceState ?: supportFragmentManager.beginTransaction()
-            .replace(R.id.contentContainer, fragmentsAdapter[R.id.searchFragment])
-            .commit()
+        val navController = findNavController(R.id.navHostFragment)
 
-        navigationBar.setOnNavigationItemSelectedListener {
-            moveToFragment(it)
-        }
+        listenToSearchViewQuery(querySearchView)
+
+        navigationBar.setupWithNavController(navController)
     }
 
-    private fun moveToFragment(item: MenuItem): Boolean {
-        when (item.itemId) {
-            R.id.searchFragment -> {
-                loadFragment(R.id.contentContainer, R.id.searchFragment)
+    private fun listenToSearchViewQuery(searchView: SearchView) {
+        searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
+            if (query.isNotEmpty()) {
+                mainViewModel.lastQuery.value = query
             }
-            R.id.playerFragment -> {
-                loadFragment(R.id.contentContainer, R.id.playerFragment)
-            }
-            R.id.cacheFragment -> {
-                loadFragment(R.id.contentContainer, R.id.cacheFragment)
-            }
-            R.id.settings -> {
-                //TODO implement preferences
-            }
-            else -> return false
-        }
-        return true
-    }
-
-    private fun loadFragment(containerId: Int, fragmentId: Int) {
-        if (navigationBar.selectedItemId != fragmentId) {
-            supportFragmentManager.beginTransaction()
-                .replace(containerId, fragmentsAdapter[fragmentId])
-                .commit()
-        }
+        })
     }
 }

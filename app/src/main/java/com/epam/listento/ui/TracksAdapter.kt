@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.navigation.findNavController
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
@@ -24,14 +25,21 @@ class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapte
     }
 
     private val tracks = mutableListOf<Track>()
+    private var lastPlayed: TrackViewHolder? = null
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.track_item, parent, false)
         return TrackViewHolder(view).also { holder ->
             holder.cardView.setOnClickListener {
-                if (holder.adapterPosition != RecyclerView.NO_POSITION) {
-                    val item = tracks[holder.adapterPosition]
-                    listener.onClick(item)
+                if (holder.isPlaying) {
+                    it.findNavController().navigate(R.id.playerActivity)
+                } else {
+                    if (holder.adapterPosition != RecyclerView.NO_POSITION) {
+                        lastPlayed?.isPlaying = false
+                        lastPlayed = holder.also { it.isPlaying = true }
+                        val item = tracks[holder.adapterPosition]
+                        listener.onClick(item)
+                    }
                 }
             }
         }
@@ -74,5 +82,6 @@ class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapte
         val title: TextView = view.findViewById(R.id.title)
         val duration: TextView = view.findViewById(R.id.duration)
         val cardView: CardView = view.findViewById(R.id.cardView)
+        var isPlaying = false
     }
 }

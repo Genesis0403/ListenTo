@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.os.Parcelable
 import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 import android.view.LayoutInflater
@@ -34,6 +35,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     companion object {
         private const val TAG = "TRACKS_FRAGMENT"
+        private const val RECYCLER_POSITION = "RECYCLER_POSITION"
 
         fun newInstance() = SearchFragment()
     }
@@ -49,7 +51,6 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     override fun onClick(track: Track) {
         binder?.let {
-            // TODO rework data transaction
             it.changeSourceData(mainViewModel.tracks.value?.body ?: emptyList())
             it.playTrack(track)
         }
@@ -79,11 +80,11 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         val recycler = view.findViewById<RecyclerView>(R.id.tracksRecyclerView)
         val progress = view.findViewById<ProgressBar>(R.id.progress)
         val toolBar = view.findViewById<Toolbar>(R.id.searchToolBar)
-        val searchView = toolBar.findViewById<SearchView>(R.id.actionSearchView)
+//        val searchView = toolBar.findViewById<SearchView>(R.id.actionSearchView)
 
-        searchView.setQuery(mainViewModel.lastQuery, false)
-
-        listenToSearchViewQuery(searchView, progress)
+//        searchView.setQuery(mainViewModel.lastQuery, false)
+//
+//        listenToSearchViewQuery(searchView, progress)
 
         recycler.run {
             setHasFixedSize(true)
@@ -94,17 +95,22 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         mainViewModel.tracks.observe(this, Observer<ApiResponse<List<Track>>> { response ->
             observeTrackList(response)
         })
-    }
 
-    private fun listenToSearchViewQuery(searchView: SearchView, progress: ProgressBar) {
-        searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
-            if (query.isNotEmpty()) {
-                progress.visibility = ProgressBar.VISIBLE
-                mainViewModel.fetchTracks(query)
-                mainViewModel.lastQuery = query
-            }
+        mainViewModel.lastQuery.observe(this, Observer<String> { query ->
+            progress.visibility = ProgressBar.VISIBLE
+            mainViewModel.fetchTracks(query)
         })
     }
+
+//    private fun listenToSearchViewQuery(searchView: SearchView, progress: ProgressBar) {
+//        searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
+//            if (query.isNotEmpty()) {
+//                progress.visibility = ProgressBar.VISIBLE
+//                mainViewModel.fetchTracks(query)
+//                mainViewModel.lastQuery = query
+//            }
+//        })
+//    }
 
     private fun observeTrackList(response: ApiResponse<List<Track>>) {
         if (response.status.isSuccess()) {

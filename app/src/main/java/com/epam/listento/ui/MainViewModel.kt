@@ -7,12 +7,11 @@ import androidx.lifecycle.ViewModel
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.mapTrack
 import com.epam.listento.db.TracksDao
-import com.epam.listento.model.DbInteractor
 import com.epam.listento.model.Track
 import com.epam.listento.repository.TracksRepository
 import com.epam.listento.utils.ContextProvider
 import com.epam.listento.utils.PlatformMappers
-import kotlinx.coroutines.Job
+import kotlinx.coroutines.*
 import javax.inject.Inject
 
 class MainViewModel @Inject constructor(
@@ -22,8 +21,9 @@ class MainViewModel @Inject constructor(
     mappers: PlatformMappers
 ) : ViewModel() {
 
-    var lastQuery: String? = null
+    val lastQuery: MutableLiveData<String> = MutableLiveData()
     private var job: Job? = null
+    private var queryJob: Job? = null
 
     private val _tracks: MutableLiveData<ApiResponse<List<Track>>> = MutableLiveData()
     val tracks: LiveData<ApiResponse<List<Track>>> get() = _tracks
@@ -44,6 +44,15 @@ class MainViewModel @Inject constructor(
                 _tracks.postValue(ApiResponse.success(items))
             } else {
                 _tracks.postValue(ApiResponse.error(response.message()))
+            }
+        }
+    }
+
+    fun querySearch(text: String?, onQuery: (String) -> Unit) {
+        if (text != null) {
+            queryJob?.cancel()
+            queryJob = CoroutineScope(Dispatchers.Main).launch {
+                delay(500)
             }
         }
     }
