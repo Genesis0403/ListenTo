@@ -1,18 +1,42 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout
+<androidx.constraintlayout.widget.ConstraintLayout
         xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:id="@+id/mainActivity"
-        android:orientation="vertical">
+        tools:context=".ui.MainActivity"
+>
 
-    <FrameLayout
-            android:id="@+id/contentContainer"
+    <androidx.appcompat.widget.Toolbar
             android:layout_width="match_parent"
+            android:layout_height="?android:attr/actionBarSize"
+            android:id="@+id/appToolBar"
+            app:layout_constraintTop_toTopOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintHorizontal_bias="0.0"
+    >
+        <androidx.appcompat.widget.SearchView
+                android:id="@+id/querySearchView"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                app:iconifiedByDefault="false"
+                style="@style/SearchViewStyle"
+        />
+    </androidx.appcompat.widget.Toolbar>
+
+    <fragment
+            android:name="androidx.navigation.fragment.NavHostFragment"
+            android:layout_width="0dp"
             android:layout_height="0dp"
-            android:layout_weight="1"
-    />
+            app:navGraph="@navigation/nav_graph" app:defaultNavHost="true"
+            android:id="@+id/navHostFragment"
+            app:layout_constraintBottom_toTopOf="@+id/navigationBar"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@+id/appToolBar"
+            app:layout_constraintEnd_toEndOf="parent"/>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
             android:id="@+id/navigationBar"
@@ -24,5 +48,9 @@
             app:itemIconTint="@color/navigation_bar_selector"
             app:labelVisibilityMode="unlabeled"
             app:itemIconSize="@dimen/icons_size"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
     />
-</LinearLayout>
+
+</androidx.constraintlayout.widget.ConstraintLayout>

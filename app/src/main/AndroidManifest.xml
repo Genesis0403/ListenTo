@@ -25,6 +25,10 @@
             </intent-filter>
         </activity>
 
+        <activity android:name=".ui.PlayerActivity"
+            android:screenOrientation="portrait"
+        />
+
         <service android:name=".model.PlayerService"
                  android:exported="false"
         >

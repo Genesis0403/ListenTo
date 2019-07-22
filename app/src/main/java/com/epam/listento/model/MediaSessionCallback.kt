@@ -22,13 +22,14 @@ class MediaSessionCallback(
     private val musicRepo: MusicRepository,
     private val downloadInteractor: DownloadInteractor,
     private val player: SimpleExoPlayer,
-    private val onSessionUpdate: (MediaMetadataCompat?, Boolean, Int) -> Unit
+    private val onSessionUpdate: (metadata: MediaMetadataCompat?, isActive: Boolean, state: Int) -> Unit
 ) : MediaSessionCompat.Callback() {
 
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     private var isAudioFocused = false
     private val audioFocusRequest: AudioFocusRequest?
     private var currentState = PlaybackStateCompat.STATE_STOPPED
+    private var currentPlaying: Track? = null
 
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { focusChange ->
         when (focusChange) {
@@ -74,15 +75,16 @@ class MediaSessionCallback(
         downloadInteractor.fillMetadata(track) { metadata ->
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
 
-            if (currentState != PlaybackStateCompat.STATE_PAUSED) {
-                downloadInteractor.downloadTrack(track, true) { result ->
+            if (currentState == PlaybackStateCompat.STATE_PAUSED && currentPlaying == track) {
+                player.playWhenReady = true
+            } else {
+                currentPlaying = track
+                downloadInteractor.downloadTrack(track) { result ->
                     if (result.status.isSuccess() && result.body != null) {
                         prepareToPlay(result.body)
                         player.playWhenReady = true
                     }
                 }
-            } else {
-                player.playWhenReady = true
             }
             currentState = PlaybackStateCompat.STATE_PLAYING
         }
@@ -96,7 +98,6 @@ class MediaSessionCallback(
         }
         onSessionUpdate(null, true, PlaybackStateCompat.STATE_PAUSED)
         currentState = PlaybackStateCompat.STATE_PAUSED
-
     }
 
     override fun onStop() {
@@ -113,6 +114,7 @@ class MediaSessionCallback(
             audioManager.abandonAudioFocus(audioFocusListener)
         }
         currentState = PlaybackStateCompat.STATE_STOPPED
+        currentPlaying = null
     }
 
     override fun onSkipToNext() {
@@ -123,11 +125,12 @@ class MediaSessionCallback(
         }
 
         val track = musicRepo.getNext()
+        currentPlaying = track
 
         downloadInteractor.fillMetadata(track) { metadata ->
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
 
-            downloadInteractor.downloadTrack(track, true) { result ->
+            downloadInteractor.downloadTrack(track) { result ->
                 if (result.status.isSuccess() && result.body != null) {
                     prepareToPlay(result.body)
                     player.playWhenReady = true
@@ -145,11 +148,12 @@ class MediaSessionCallback(
         }
 
         val track = musicRepo.getPrevious()
+        currentPlaying = track
 
         downloadInteractor.fillMetadata(track) { metadata ->
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
 
-            downloadInteractor.downloadTrack(track, true) { result ->
+            downloadInteractor.downloadTrack(track) { result ->
                 if (result.status.isSuccess() && result.body != null) {
                     prepareToPlay(result.body)
                     player.playWhenReady = true

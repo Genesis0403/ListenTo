@@ -5,7 +5,6 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.graphics.Bitmap
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
@@ -16,6 +15,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
@@ -96,6 +96,10 @@ class PlayerFragment : Fragment() {
                 controller?.transportControls?.skipToPrevious()
             }
         }
+
+        backButton.setOnClickListener {
+            activity?.onBackPressed()
+        }
     }
 
     private fun initOnSkipListener(action: () -> Unit) {
@@ -144,8 +148,8 @@ class PlayerFragment : Fragment() {
                 playButton.isChecked = true
                 if (scheduler == null) {
                     scheduler = Timer()
+                    startScheduler()
                 }
-                startScheduler()
             }
         }
     }
@@ -210,8 +214,8 @@ class PlayerFragment : Fragment() {
                 if (seekBar != null) {
                     if (fromUser) {
                         resultProgress = progress
+                        changeSeekBarTimings(progress, seekBar.max - progress)
                     }
-                    changeSeekBarTimings(progress, seekBar.max - progress)
                 }
             }
 

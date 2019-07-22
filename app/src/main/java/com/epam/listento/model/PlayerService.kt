@@ -9,38 +9,26 @@ import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
-import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleOwner
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.repository.MusicRepository
-import com.epam.listento.repository.TrackRepository
 import com.epam.listento.ui.MainActivity
+import com.epam.listento.ui.PlayerActivity
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import java.lang.ref.WeakReference
 import javax.inject.Inject
 
-class PlayerService : IntentService(TAG) {
-
-    override fun onHandleIntent(intent: Intent?) {
-        MediaButtonReceiver.handleIntent(mediaSession, intent)
-    }
+class PlayerService : Service() {
 
     private companion object {
         private const val TAG = "PLAYER_SERVICE"
@@ -65,6 +53,11 @@ class PlayerService : IntentService(TAG) {
 
     override fun onBind(intent: Intent?): IBinder? {
         return PlayerBinder()
+    }
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        MediaButtonReceiver.handleIntent(mediaSession, intent)
+        return super.onStartCommand(intent, flags, startId)
     }
 
     override fun onCreate() {
@@ -133,7 +126,17 @@ class PlayerService : IntentService(TAG) {
                     0,
                     Intent(
                         Intent.ACTION_MEDIA_BUTTON, null, applicationContext, MediaButtonReceiver::class.java
-                    ),
+                    ).also {
+                        it.flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    },
+                    0
+                )
+            )
+            setSessionActivity(
+                PendingIntent.getActivity(
+                    applicationContext,
+                    0,
+                    Intent(applicationContext, PlayerActivity::class.java),
                     0
                 )
             )

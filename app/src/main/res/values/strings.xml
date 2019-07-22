@@ -15,4 +15,5 @@
     <string name="playlist">Playlist</string>
     <string name="dbName">ListenToDatabase</string>
     <string name="cache">Cache</string>
+    <string name="default_caching_key">default_caching</string>
 </resources>

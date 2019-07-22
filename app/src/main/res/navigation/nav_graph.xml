@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+            xmlns:app="http://schemas.android.com/apk/res-auto"
+            xmlns:tools="http://schemas.android.com/tools"
+            android:id="@+id/nav_graph"
+            app:startDestination="@id/searchFragment">
+    <navigation android:id="@+id/searchFragment" app:startDestination="@id/searchFragmentNav" android:label="Search">
+        <fragment android:id="@+id/searchFragmentNav"
+                  android:name="com.epam.listento.ui.SearchFragment"
+                  android:label="Search"
+                  tools:layout="@layout/tracks_fragment"/>
+        <action android:id="@+id/action_global_playerActivity3" app:destination="@+id/playerActivity3"
+                app:enterAnim="@anim/nav_default_enter_anim" app:exitAnim="@anim/nav_default_exit_anim"/>
+        <action android:id="@+id/action_global_playerActivity" app:destination="@id/playerActivity"/>
+    </navigation>
+    <navigation android:id="@+id/cacheFragment" app:startDestination="@id/cacheFragmentNav" android:label="Cache">
+        <fragment android:id="@+id/cacheFragmentNav"
+                  android:name="com.epam.listento.ui.PlaylistFragment"
+                  android:label="Cache"
+                  tools:layout="@layout/cache_fragment"/>
+        <action android:id="@+id/action_global_playerActivity32" app:destination="@id/playerActivity3"
+                app:enterAnim="@anim/nav_default_enter_anim" app:exitAnim="@anim/nav_default_exit_anim"/>
+        <action android:id="@+id/action_global_playerActivity2" app:destination="@id/playerActivity"/>
+    </navigation>
+    <navigation android:id="@+id/preferencesFragment" app:startDestination="@id/prefFragment" android:label="Settings">
+        <fragment
+                android:id="@+id/prefFragment"
+                android:name="com.epam.listento.ui.PreferencesFragment"
+                android:label="Settings"/>
+    </navigation>
+    <activity android:id="@+id/playerActivity" android:name="com.epam.listento.ui.PlayerActivity"
+              android:label="player_activity" tools:layout="@layout/player_activity"/>
+</navigation>

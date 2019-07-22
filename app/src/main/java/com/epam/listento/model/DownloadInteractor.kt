@@ -4,11 +4,10 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.support.v4.media.MediaMetadataCompat
+import androidx.preference.PreferenceManager
+import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
-import com.epam.listento.repository.AudioRepository
-import com.epam.listento.repository.FileRepository
-import com.epam.listento.repository.StorageRepository
-import com.epam.listento.repository.TrackRepository
+import com.epam.listento.repository.*
 import com.epam.listento.utils.ContextProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -59,12 +58,14 @@ class DownloadInteractor @Inject constructor(
 
     fun downloadTrack(
         track: Track,
-        isCaching: Boolean,
         completion: (ApiResponse<Uri>) -> Unit
     ) {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(contextProvider.context())
+        val isCaching = prefs.getBoolean(contextProvider.getString(R.string.default_caching_key), false)
         val trackName = "${track.artist?.name}-${track.title}.mp3"
         if (trackRepo.checkTrackExistence(trackName)) {
             val uri = trackRepo.fetchTrackUri(trackName)
+            //TODO implement caching if not cached
             completion(ApiResponse.success(uri))
         } else {
             fetchTrack(track.id, isCaching) { url ->
@@ -111,5 +112,4 @@ class DownloadInteractor @Inject constructor(
             }
         }
     }
-
 }

@@ -6,7 +6,6 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import com.epam.listento.domain.DomainTrack
-import com.epam.listento.model.Track
 
 @Dao
 interface TracksDao {
