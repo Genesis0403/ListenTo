@@ -6,8 +6,8 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
-import android.os.Parcelable
 import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -79,12 +79,13 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         super.onViewCreated(view, savedInstanceState)
         val recycler = view.findViewById<RecyclerView>(R.id.tracksRecyclerView)
         val progress = view.findViewById<ProgressBar>(R.id.progress)
-        val toolBar = view.findViewById<Toolbar>(R.id.searchToolBar)
-//        val searchView = toolBar.findViewById<SearchView>(R.id.actionSearchView)
 
-//        searchView.setQuery(mainViewModel.lastQuery, false)
-//
-//        listenToSearchViewQuery(searchView, progress)
+        activity?.findViewById<Toolbar>(R.id.appToolBar)?.apply {
+            menu.clear()
+            inflateMenu(R.menu.search_toolbar_menu)
+            val searchView = menu.findItem(R.id.actionSearch).actionView as SearchView
+            listenToSearchViewQuery(searchView, progress)
+        }
 
         recycler.run {
             setHasFixedSize(true)
@@ -102,15 +103,14 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         })
     }
 
-//    private fun listenToSearchViewQuery(searchView: SearchView, progress: ProgressBar) {
-//        searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
-//            if (query.isNotEmpty()) {
-//                progress.visibility = ProgressBar.VISIBLE
-//                mainViewModel.fetchTracks(query)
-//                mainViewModel.lastQuery = query
-//            }
-//        })
-//    }
+    private fun listenToSearchViewQuery(searchView: SearchView, progress: ProgressBar) {
+        searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
+            if (query.isNotEmpty()) {
+                progress.visibility = ProgressBar.VISIBLE
+                mainViewModel.fetchTracks(query)
+            }
+        })
+    }
 
     private fun observeTrackList(response: ApiResponse<List<Track>>) {
         if (response.status.isSuccess()) {

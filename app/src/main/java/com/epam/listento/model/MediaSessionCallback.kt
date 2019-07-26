@@ -7,6 +7,7 @@ import android.media.AudioFocusRequest
 import android.media.AudioManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
@@ -53,7 +54,6 @@ class MediaSessionCallback(
 
     override fun onPlay() {
         super.onPlay()
-        context.startService(Intent(context.applicationContext, PlayerService::class.java))
 
         if (player.playWhenReady) {
             player.playWhenReady = false

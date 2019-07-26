@@ -10,5 +10,4 @@ class PlayerActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.player_activity)
     }
-
 }

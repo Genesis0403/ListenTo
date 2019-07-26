@@ -11,7 +11,7 @@ import com.epam.listento.model.Track
 import com.epam.listento.repository.TracksRepository
 import com.epam.listento.utils.ContextProvider
 import com.epam.listento.utils.PlatformMappers
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Job
 import javax.inject.Inject
 
 class MainViewModel @Inject constructor(
@@ -44,15 +44,6 @@ class MainViewModel @Inject constructor(
                 _tracks.postValue(ApiResponse.success(items))
             } else {
                 _tracks.postValue(ApiResponse.error(response.message()))
-            }
-        }
-    }
-
-    fun querySearch(text: String?, onQuery: (String) -> Unit) {
-        if (text != null) {
-            queryJob?.cancel()
-            queryJob = CoroutineScope(Dispatchers.Main).launch {
-                delay(500)
             }
         }
     }

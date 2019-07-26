@@ -9,7 +9,7 @@
                   android:name="com.epam.listento.ui.SearchFragment"
                   android:label="Search"
                   tools:layout="@layout/tracks_fragment"/>
-        <action android:id="@+id/action_global_playerActivity3" app:destination="@+id/playerActivity3"
+        <action android:id="@+id/action_global_playerActivity3" app:destination="@+id/playerActivity"
                 app:enterAnim="@anim/nav_default_enter_anim" app:exitAnim="@anim/nav_default_exit_anim"/>
         <action android:id="@+id/action_global_playerActivity" app:destination="@id/playerActivity"/>
     </navigation>
@@ -18,7 +18,7 @@
                   android:name="com.epam.listento.ui.PlaylistFragment"
                   android:label="Cache"
                   tools:layout="@layout/cache_fragment"/>
-        <action android:id="@+id/action_global_playerActivity32" app:destination="@id/playerActivity3"
+        <action android:id="@+id/action_global_playerActivity32" app:destination="@id/playerActivity"
                 app:enterAnim="@anim/nav_default_enter_anim" app:exitAnim="@anim/nav_default_exit_anim"/>
         <action android:id="@+id/action_global_playerActivity2" app:destination="@id/playerActivity"/>
     </navigation>
