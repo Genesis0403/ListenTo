@@ -9,6 +9,8 @@ import android.media.AudioManager
 import android.os.Binder
 import android.os.Build
 import android.os.IBinder
+import android.support.v4.media.MediaMetadataCompat
+import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
@@ -19,6 +21,8 @@ import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.epam.listento.App
 import com.epam.listento.R
+import com.epam.listento.model.player.NOTIFICATION_ID
+import com.epam.listento.model.player.NotificationBuilder
 import com.epam.listento.repository.MusicRepository
 import com.epam.listento.ui.MainActivity
 import com.epam.listento.ui.PlayerActivity
@@ -26,30 +30,37 @@ import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.ExoPlayerFactory
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import java.lang.Exception
 import javax.inject.Inject
 
 class PlayerService : Service() {
 
     private companion object {
         private const val TAG = "PLAYER_SERVICE"
-        private const val CHANNEL_ID = "LISTEN_TO_ID"
-        private const val NOTIFICATION_ID = 1
     }
 
     @Inject
     lateinit var musicRepo: MusicRepository
 
     @Inject
+    lateinit var notificationBuilder: NotificationBuilder
+
+    @Inject
     lateinit var downloadInteractor: DownloadInteractor
 
     private var mediaSession: MediaSessionCompat? = null
+    lateinit var controller: MediaControllerCompat
+
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
     private lateinit var player: SimpleExoPlayer
     private var mediaSessionCallback: MediaSessionCallback? = null
 
-    private val channelId by lazy { createNotificationChannel() }
     private val activityIntent by lazy { Intent(applicationContext, MainActivity::class.java) }
-    private var currentState = PlaybackStateCompat.STATE_STOPPED
+
+    private val notificationManager by lazy {
+        getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+    }
+    private var isForeground = false
 
     override fun onBind(intent: Intent?): IBinder? {
         return PlayerBinder()
@@ -89,16 +100,13 @@ class PlayerService : Service() {
                 mediaSession?.setMetadata(metadata)
             }
             updateSessionData(isActive, state)
-            currentState = state
-            refreshNotification()
-            if (state == PlaybackStateCompat.STATE_STOPPED) {
-                stopSelf()
-            }
         }
 
         mediaSession?.setCallback(mediaSessionCallback)
 
-        registerReceiver(becomeNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+        controller = MediaControllerCompat(this, mediaSession!!).also {
+            it.registerCallback(ControllerCallback())
+        }
     }
 
     private fun updateSessionData(isActive: Boolean, state: Int) {
@@ -132,119 +140,16 @@ class PlayerService : Service() {
                     0
                 )
             )
-            setSessionActivity(
-                PendingIntent.getActivity(
-                    applicationContext,
-                    0,
-                    Intent(applicationContext, PlayerActivity::class.java),
-                    0
-                )
-            )
         }
     }
 
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "ON DESTROY")
-        unregisterReceiver(becomeNoisyReceiver)
         mediaSessionCallback = null
         mediaSession?.release()
         mediaSession = null
         player.release()
-    }
-
-    private fun createNotification(): Notification { // TODO move to another class?
-        return NotificationCompat.Builder(this, channelId).apply {
-            setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            setSmallIcon(R.drawable.notification_small_icon_24dp)
-            priority = NotificationCompat.PRIORITY_HIGH
-            setShowWhen(false)
-            setOnlyAlertOnce(true)
-            color = ContextCompat.getColor(this@PlayerService, R.color.colorPrimary)
-
-            addAction(
-                R.drawable.ic_fast_rewind_black_24dp,
-                getString(R.string.previous_playback),
-                PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS
-            )
-            if (currentState == PlaybackStateCompat.STATE_PLAYING) {
-                addAction(
-                    R.drawable.ic_pause_black_24dp,
-                    getString(R.string.play_action),
-                    PlaybackStateCompat.ACTION_PLAY_PAUSE
-                )
-            } else {
-                addAction(
-                    R.drawable.ic_play_arrow_black_24dp,
-                    getString(R.string.pause_action),
-                    PlaybackStateCompat.ACTION_PLAY_PAUSE
-                )
-            }
-            addAction(
-                R.drawable.ic_fast_forward_black_24dp,
-                getString(R.string.next_action),
-                PlaybackStateCompat.ACTION_SKIP_TO_NEXT
-            )
-            setStyle(
-                MediaStyle()
-                    .setShowActionsInCompactView(0, 1, 2)
-                    .setMediaSession(mediaSession?.sessionToken)
-            )
-            fillNotificationWithMetadata(this)
-        }.build()
-    }
-
-    private fun createNotificationChannel(): String {
-        return if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) ""
-        else {
-            val channelName = getString(R.string.notification_channel_name)
-            val channel = NotificationChannel(CHANNEL_ID, channelName, NotificationManager.IMPORTANCE_HIGH)
-            channel.description = getString(R.string.notification_channel_description)
-            val manager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            manager.createNotificationChannel(channel)
-            CHANNEL_ID
-        }
-    }
-
-    private fun NotificationCompat.Builder.addAction(
-        icon: Int,
-        title: String,
-        state: Long
-    ): NotificationCompat.Builder {
-        return this.addAction(
-            NotificationCompat.Action(
-                icon,
-                title,
-                MediaButtonReceiver.buildMediaButtonPendingIntent(
-                    applicationContext,
-                    state
-                )
-            )
-        )
-    }
-
-    private fun fillNotificationWithMetadata(builder: NotificationCompat.Builder): NotificationCompat.Builder {
-        val metadata = mediaSession?.controller?.metadata?.description
-        return builder.setContentTitle(metadata?.title)
-            .setContentText(metadata?.subtitle)
-            .setLargeIcon(metadata?.iconBitmap)
-            .setContentIntent(mediaSession?.controller?.sessionActivity)
-            .setDeleteIntent(
-                MediaButtonReceiver.buildMediaButtonPendingIntent(applicationContext, PlaybackStateCompat.ACTION_STOP)
-            ) ?: builder
-    }
-
-    private fun refreshNotification() {
-        when (currentState) {
-            PlaybackStateCompat.STATE_PLAYING -> {
-                startForeground(NOTIFICATION_ID, createNotification())
-            }
-            PlaybackStateCompat.STATE_PAUSED -> {
-                NotificationManagerCompat.from(this).notify(NOTIFICATION_ID, createNotification())
-                stopForeground(false)
-            }
-            else -> stopForeground(true)
-        }
     }
 
     inner class PlayerBinder : Binder() {
@@ -264,11 +169,71 @@ class PlayerService : Service() {
         fun getProgress(): Long = player.currentPosition
     }
 
+    private inner class ControllerCallback : MediaControllerCompat.Callback() {
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            super.onPlaybackStateChanged(state)
+            state?.let { updateNotification(it) }
+        }
+
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            super.onMetadataChanged(metadata)
+            controller.playbackState?.let { updateNotification(it) }
+        }
+    }
+
+    private fun updateNotification(state: PlaybackStateCompat) {
+
+        val notification: Notification? = if (controller.metadata != null) {
+            mediaSession?.let { notificationBuilder.buildNotification(it.sessionToken) }
+        } else {
+            null
+        }
+
+        when (state.state) {
+            PlaybackStateCompat.STATE_PLAYING,
+            PlaybackStateCompat.STATE_BUFFERING -> {
+
+                registerReceiver(becomeNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+
+                if (notification != null) {
+                    notificationManager.notify(NOTIFICATION_ID, notification)
+                    if (!isForeground) {
+                        ContextCompat.startForegroundService(
+                            applicationContext,
+                            Intent(this, PlayerService::class.java)
+                        )
+                        startForeground(NOTIFICATION_ID, notification)
+                        isForeground = true
+                    }
+                }
+            }
+            else -> {
+                try {
+                    unregisterReceiver(becomeNoisyReceiver)
+                } catch (e: Exception) {}
+
+                if (isForeground) {
+                    stopForeground(false)
+                    isForeground = false
+
+                    if (notification != null) {
+                        notificationManager.notify(NOTIFICATION_ID, notification)
+                    } else {
+                        stopForeground(true)
+                    }
+                }
+                if (state.state == PlaybackStateCompat.STATE_STOPPED) {
+                    stopSelf()
+                }
+            }
+        }
+    }
+
     private val becomeNoisyReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             when (intent?.action) {
                 AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
-                    mediaSessionCallback?.onPause()
+                    controller.transportControls.pause()
                 }
                 else -> return
             }
@@ -279,7 +244,7 @@ class PlayerService : Service() {
         override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
             super.onPlayerStateChanged(playWhenReady, playbackState)
             if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
-                mediaSessionCallback?.onSkipToNext()
+                controller.transportControls.skipToNext()
             }
         }
     }

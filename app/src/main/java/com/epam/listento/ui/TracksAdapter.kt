@@ -31,15 +31,15 @@ class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapte
         val view = LayoutInflater.from(parent.context).inflate(R.layout.track_item, parent, false)
         return TrackViewHolder(view).also { holder ->
             holder.cardView.setOnClickListener {
-                if (holder.isPlaying) {
-                    it.findNavController().navigate(R.id.playerActivity)
-                } else {
+//                if (holder.isPlaying) {
+//                    it.findNavController().navigate(R.id.playerActivity)
+//                } else {
                     if (holder.adapterPosition != RecyclerView.NO_POSITION) {
-                        lastPlayed?.isPlaying = false
-                        lastPlayed = holder.also { it.isPlaying = true }
+//                        lastPlayed?.isPlaying = false
+//                        lastPlayed = holder.also { it.isPlaying = true }
                         val item = tracks[holder.adapterPosition]
                         listener.onClick(item)
-                    }
+//                    }
                 }
             }
         }

@@ -60,6 +60,7 @@ dependencies {
 
     //ExoPlayer
     implementation 'com.google.android.exoplayer:exoplayer:2.10.2'
+    implementation "com.google.android.exoplayer:extension-mediasession:2.10.2"
 
     //Retrofit
     implementation "com.squareup.retrofit2:retrofit:${retrofitVersion}"

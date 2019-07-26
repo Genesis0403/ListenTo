@@ -8,9 +8,11 @@
     <item android:id="@+id/cacheFragment"
           android:title="@string/cache"
           android:icon="@drawable/playlist_icon_24dp"
+          android:menuCategory="secondary"
     />
     <item android:id="@+id/preferencesFragment"
           android:title="@string/settings_option"
           android:icon="@drawable/settings_icon_24dp"
+          android:menuCategory="secondary"
     />
 </menu>
