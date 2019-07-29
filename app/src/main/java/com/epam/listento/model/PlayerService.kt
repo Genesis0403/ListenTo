@@ -7,29 +7,23 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.media.AudioManager
 import android.os.Binder
-import android.os.Build
 import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.epam.listento.App
-import com.epam.listento.R
+import com.epam.listento.model.player.MusicSource
 import com.epam.listento.model.player.NOTIFICATION_ID
 import com.epam.listento.model.player.NotificationBuilder
-import com.epam.listento.repository.MusicRepository
+import com.epam.listento.model.player.PlayerPreparer
+import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.ui.MainActivity
-import com.epam.listento.ui.PlayerActivity
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.ExoPlayerFactory
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.audio.AudioAttributes
 import java.lang.Exception
 import javax.inject.Inject
 
@@ -37,6 +31,7 @@ class PlayerService : Service() {
 
     private companion object {
         private const val TAG = "PLAYER_SERVICE"
+        private const val DOES_HANDLE_AUDIO_FOCUS = true
     }
 
     @Inject
@@ -48,11 +43,13 @@ class PlayerService : Service() {
     @Inject
     lateinit var downloadInteractor: DownloadInteractor
 
+    @Inject
+    lateinit var player: SimpleExoPlayer
+
     private var mediaSession: MediaSessionCompat? = null
     lateinit var controller: MediaControllerCompat
 
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
-    private lateinit var player: SimpleExoPlayer
     private var mediaSessionCallback: MediaSessionCallback? = null
 
     private val activityIntent by lazy { Intent(applicationContext, MainActivity::class.java) }
@@ -75,6 +72,16 @@ class PlayerService : Service() {
         App.component.inject(this)
         super.onCreate()
 
+        val attributes = AudioAttributes.Builder()
+            .setUsage(C.USAGE_MEDIA)
+            .setContentType(C.CONTENT_TYPE_MUSIC)
+            .build()
+
+        player.run {
+            addListener(playerListener)
+            setAudioAttributes(attributes, DOES_HANDLE_AUDIO_FOCUS)
+        }
+
         stateBuilder = PlaybackStateCompat.Builder()
             .setActions(
                 PlaybackStateCompat.ACTION_PLAY_PAUSE
@@ -85,9 +92,6 @@ class PlayerService : Service() {
                         or PlaybackStateCompat.ACTION_STOP
             )
 
-        player = ExoPlayerFactory.newSimpleInstance(this).also {
-            it.addListener(playerListener)
-        }
         mediaSession = initMediaSession()
 
         mediaSessionCallback = MediaSessionCallback(
@@ -155,17 +159,6 @@ class PlayerService : Service() {
     inner class PlayerBinder : Binder() {
         fun getSessionToken(): MediaSessionCompat.Token? = mediaSession?.sessionToken
 
-        fun changeSourceData(data: List<Track>) {
-            if (musicRepo.isDataChanged(data)) {
-                musicRepo.setSource(data)
-            }
-        }
-
-        fun playTrack(track: Track) {
-            musicRepo.setCurrent(track)
-            mediaSession?.controller?.transportControls?.play()
-        }
-
         fun getProgress(): Long = player.currentPosition
     }
 
@@ -210,7 +203,8 @@ class PlayerService : Service() {
             else -> {
                 try {
                     unregisterReceiver(becomeNoisyReceiver)
-                } catch (e: Exception) {}
+                } catch (e: Exception) {
+                }
 
                 if (isForeground) {
                     stopForeground(false)

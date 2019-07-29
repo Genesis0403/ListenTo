@@ -79,7 +79,6 @@ class NotificationBuilder @Inject constructor(
         0
     )
 
-
     fun buildNotification(token: MediaSessionCompat.Token): Notification {
         createChannel()
 
@@ -131,5 +130,4 @@ class NotificationBuilder @Inject constructor(
 
         notificationManager.createNotificationChannel(channel)
     }
-
 }

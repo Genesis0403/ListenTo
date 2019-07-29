@@ -1,5 +1,6 @@
-package com.epam.listento.repository
+package com.epam.listento.repository.global
 
+import android.support.v4.media.MediaMetadataCompat
 import androidx.lifecycle.LiveData
 import com.epam.listento.domain.DomainTrack
 import com.epam.listento.model.Track
@@ -8,7 +9,5 @@ import retrofit2.Response
 
 interface TracksRepository {
     fun fetchTracks(text: String, completion: (Response<List<DomainTrack>>) -> Unit): Job
-    fun cacheTrack(track: Track)
-    fun uncacheTrack(track: Track)
     fun getCache(completion: (LiveData<List<Track>>) -> Unit)
 }

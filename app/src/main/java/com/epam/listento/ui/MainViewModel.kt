@@ -1,5 +1,6 @@
 package com.epam.listento.ui
 
+import android.support.v4.media.MediaMetadataCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
@@ -8,7 +9,9 @@ import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.mapTrack
 import com.epam.listento.db.TracksDao
 import com.epam.listento.model.Track
-import com.epam.listento.repository.TracksRepository
+import com.epam.listento.model.toMetadata
+import com.epam.listento.repository.global.MusicRepository
+import com.epam.listento.repository.global.TracksRepository
 import com.epam.listento.utils.ContextProvider
 import com.epam.listento.utils.PlatformMappers
 import kotlinx.coroutines.Job
@@ -17,6 +20,7 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val contextProvider: ContextProvider,
     private val tracksRepo: TracksRepository,
+    private val musicRepo: MusicRepository,
     dao: TracksDao,
     mappers: PlatformMappers
 ) : ViewModel() {
@@ -48,11 +52,11 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun cacheTrack(track: Track) {
-        tracksRepo.cacheTrack(track)
-    }
-
-    fun uncacheTrack(track: Track) {
-        tracksRepo.uncacheTrack(track)
+    fun itemClick(track: Track, list: List<Track>) {
+        val metadata = list.map { it.toMetadata() }
+        musicRepo.run {
+            setSource(metadata)
+            setCurrent(track.toMetadata())
+        }
     }
 }

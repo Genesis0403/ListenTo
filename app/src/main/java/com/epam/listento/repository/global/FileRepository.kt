@@ -1,4 +1,4 @@
-package com.epam.listento.repository
+package com.epam.listento.repository.global
 
 import android.net.Uri
 import retrofit2.Response
