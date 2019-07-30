@@ -5,9 +5,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.preference.PreferenceFragmentCompat
 import com.epam.listento.R
 
-
 class PreferencesFragment : PreferenceFragmentCompat() {
-
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

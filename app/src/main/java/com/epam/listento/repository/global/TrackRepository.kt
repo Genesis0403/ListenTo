@@ -5,7 +5,7 @@ import com.epam.listento.api.ApiResponse
 import com.epam.listento.domain.DomainTrack
 
 interface TrackRepository {
-    fun fetchTrack(id: Int, isCaching: Boolean, completion: (ApiResponse<DomainTrack>) -> Unit)
+    suspend fun fetchTrack(id: Int, isCaching: Boolean, completion: suspend (ApiResponse<DomainTrack>) -> Unit)
     fun checkTrackExistence(trackName: String): Boolean
     fun fetchTrackUri(trackName: String): Uri
 }

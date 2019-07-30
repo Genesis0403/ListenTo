@@ -7,7 +7,6 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -20,6 +19,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
+import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.epam.listento.App
@@ -27,6 +27,7 @@ import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
+import com.epam.listento.model.player.MediaSessionManager
 import com.epam.listento.utils.DebounceSearchListener
 import kotlinx.android.synthetic.main.tracks_fragment.*
 import javax.inject.Inject
@@ -44,6 +45,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
     lateinit var factory: ViewModelProvider.Factory
     private lateinit var mainViewModel: MainViewModel
 
+    private lateinit var sessionManager: MediaSessionManager
     private val tracksAdapter = TracksAdapter(this)
 
     private var binder: PlayerService.PlayerBinder? = null
@@ -51,8 +53,16 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     override fun onClick(track: Track) {
         binder?.let {
-            it.changeSourceData(mainViewModel.tracks.value?.body ?: emptyList())
-            it.playTrack(track)
+            val title = sessionManager.currentPlaying.value?.description?.title
+            val artist = sessionManager.currentPlaying.value?.description?.subtitle
+            if (track.artist?.name == artist && track.title == title) {
+                findNavController().navigate(R.id.playerActivity)
+            } else {
+                mainViewModel.tracks.value?.let {
+                    mainViewModel.itemClick(track, it.body!!)
+                    sessionManager.transportControls.play()
+                }
+            }
         }
     }
 
@@ -139,6 +149,8 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
             binder = service as PlayerService.PlayerBinder
             binder?.let {
                 val token = it.getSessionToken() ?: return
+                val app = activity?.applicationContext ?: return
+                sessionManager = MediaSessionManager.getInstance(app, token)
                 try {
                     controller = MediaControllerCompat(requireActivity(), token)
                 } catch (e: Exception) {

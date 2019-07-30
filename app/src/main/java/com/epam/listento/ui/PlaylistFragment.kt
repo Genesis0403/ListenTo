@@ -7,7 +7,6 @@ import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -26,10 +25,12 @@ import com.epam.listento.R
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.MediaSessionManager
+import com.epam.listento.model.player.MusicSource
 import kotlinx.android.synthetic.main.tracks_fragment.*
 import javax.inject.Inject
 
 class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
+
     companion object {
         private const val TAG = "PLAYLIST_FRAGMENT"
         private const val RECYCLER_POSITION = "RECYCLER_POSITION"
@@ -47,7 +48,6 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
     private var binder: PlayerService.PlayerBinder? = null
     private var controller: MediaControllerCompat? = null
 
-
     override fun onClick(track: Track) {
         binder?.let {
             val title = sessionManager.currentPlaying.value?.description?.title
@@ -55,8 +55,10 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
             if (track.artist?.name == artist && track.title == title) {
                 findNavController().navigate(R.id.playerActivity)
             } else {
-                it.changeSourceData(mainViewModel.cachedTracks.value ?: emptyList())
-                it.playTrack(track)
+                mainViewModel.cachedTracks.value?.let {
+                    mainViewModel.itemClick(track, it)
+                    sessionManager.transportControls.play()
+                }
             }
         }
     }
@@ -97,7 +99,11 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
         }
 
         mainViewModel.cachedTracks.observe(this, Observer<List<Track>> { tracks ->
-            observeTrackList(tracks)
+            if (!tracks.isNullOrEmpty()) {
+                observeTrackList(tracks)
+            } else {
+                progress.visibility = View.VISIBLE
+            }
         })
     }
 

@@ -1,6 +1,5 @@
 package com.epam.listento.ui
 
-import android.support.v4.media.MediaMetadataCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
@@ -14,7 +13,10 @@ import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.repository.global.TracksRepository
 import com.epam.listento.utils.ContextProvider
 import com.epam.listento.utils.PlatformMappers
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 class MainViewModel @Inject constructor(
@@ -41,13 +43,15 @@ class MainViewModel @Inject constructor(
 
     fun fetchTracks(text: String) {
         job?.cancel()
-        job = tracksRepo.fetchTracks(text) { response ->
-            if (response.isSuccessful) {
-                val items =
-                    response.body()?.asSequence()?.map { mapTrack(it) }?.filterNotNull()?.toList()
-                _tracks.postValue(ApiResponse.success(items))
-            } else {
-                _tracks.postValue(ApiResponse.error(response.message()))
+        job = GlobalScope.launch(Dispatchers.IO) {
+            tracksRepo.fetchTracks(text) { response ->
+                if (response.isSuccessful) {
+                    val items =
+                        response.body()?.asSequence()?.map { mapTrack(it) }?.filterNotNull()?.toList()
+                    _tracks.postValue(ApiResponse.success(items))
+                } else {
+                    _tracks.postValue(ApiResponse.error(response.message()))
+                }
             }
         }
     }
