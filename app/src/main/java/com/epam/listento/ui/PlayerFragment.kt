@@ -15,7 +15,6 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
@@ -28,12 +27,7 @@ import com.epam.listento.R
 import com.epam.listento.model.MsMapper
 import com.epam.listento.model.PlayerService
 import kotlinx.android.synthetic.main.player_fragment.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import java.util.*
 import javax.inject.Inject
-import kotlin.concurrent.schedule
 
 class PlayerFragment : Fragment() {
 
@@ -41,8 +35,6 @@ class PlayerFragment : Fragment() {
         private const val TAG = "PLAYER_FRAGMENT"
         private const val DEFAULT_TIMING = "0:00"
         private const val DEFAULT_TITLE = "None"
-        private const val SECOND: Long = 1000
-        private const val DELAY: Long = 0
         private const val CORNERS_RADIUS = 28
 
         fun newInstance() = PlayerFragment()
@@ -50,19 +42,18 @@ class PlayerFragment : Fragment() {
 
     @Inject
     lateinit var factory: ViewModelProvider.Factory
-    private lateinit var mainViewModel: MainViewModel
+    private lateinit var playerViewModel: PlayerViewModel
 
     private var binder: PlayerService.PlayerBinder? = null
     private var controller: MediaControllerCompat? = null
 
-    private var scheduler: Timer? = null
     private var isUserTouching = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         Log.d(TAG, "CREATED")
         App.component.inject(this)
         super.onCreate(savedInstanceState)
-        mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
+        playerViewModel = ViewModelProviders.of(requireActivity(), factory)[PlayerViewModel::class.java]
         activity?.bindService(Intent(activity, PlayerService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
 
@@ -117,8 +108,7 @@ class PlayerFragment : Fragment() {
         controller?.unregisterCallback(controllerCallback)
         binder = null
         controller = null
-        scheduler?.cancel()
-        scheduler = null
+        playerViewModel.stopScheduler()
     }
 
     private fun listenToPlayerState() {
@@ -140,32 +130,26 @@ class PlayerFragment : Fragment() {
     private fun restorePlayButtonState(state: PlaybackStateCompat?) {
         when (state?.state) {
             PlaybackStateCompat.STATE_STOPPED, PlaybackStateCompat.STATE_PAUSED -> {
-                scheduler?.cancel()
-                scheduler = null
+                playerViewModel.stopScheduler()
                 playButton.isChecked = false
             }
             PlaybackStateCompat.STATE_PLAYING -> {
                 playButton.isChecked = true
-                if (scheduler == null) {
-                    scheduler = Timer()
-                    startScheduler()
-                }
+                startScheduler()
             }
         }
     }
 
     private fun startScheduler() {
-        scheduler?.schedule(DELAY, SECOND) {
-            CoroutineScope(Dispatchers.Main).launch {
-                if (!isUserTouching) {
-                    trackTimeProgress.progress = binder?.getProgress()?.toInt() ?: 0
-                    changeSeekBarTimings(
-                        trackTimeProgress.progress,
-                        trackTimeProgress.max - trackTimeProgress.progress
-                    )
-                }
+        playerViewModel.startScheduler {
+            if (!isUserTouching) {
+                trackTimeProgress.progress = binder?.getProgress()?.toInt() ?: 0
+                changeSeekBarTimings(
+                    trackTimeProgress.progress,
+                    trackTimeProgress.max - trackTimeProgress.progress
+                )
             }
-        }?.run()
+        }
     }
 
     @SuppressLint("SetTextI18n")
@@ -179,7 +163,6 @@ class PlayerFragment : Fragment() {
             metadata.description.run {
                 trackTitle.text = title
                 artistName.text = subtitle
-                // TODO fix duration cast from Long to Int
                 val duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).toInt()
                 trackTimeProgress.max = duration
                 loadImage(iconUri.toString())

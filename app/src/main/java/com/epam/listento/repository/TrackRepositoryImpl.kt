@@ -10,7 +10,6 @@ import com.epam.listento.domain.DomainTrack
 import com.epam.listento.repository.global.TrackRepository
 import com.epam.listento.utils.ContextProvider
 import com.epam.listento.utils.MusicMapper
-import kotlinx.coroutines.*
 import java.io.File
 import javax.inject.Inject
 
@@ -24,31 +23,21 @@ class TrackRepositoryImpl @Inject constructor(
     private val dao: TracksDao
 ) : TrackRepository {
 
-    private var job: Job? = null
-
-    override fun fetchTrack(
+    override suspend fun fetchTrack(
         id: Int,
         isCaching: Boolean,
-        completion: (ApiResponse<DomainTrack>) -> Unit
+        completion: suspend (ApiResponse<DomainTrack>) -> Unit
     ) {
-        job?.cancel()
-        job = GlobalScope.launch(Dispatchers.IO) {
-            val response = service.fetchTrack(id)
-            if (response.isSuccessful && response.body() != null) {
+        val response = service.fetchTrack(id)
+        if (response.isSuccessful && response.body() != null) {
 
-                val track = mappers.trackToDomain(response.body()?.track!!)
-                if (isCaching) {
-                    cacheTrack(track)
-                }
-
-                withContext(Dispatchers.Main) {
-                    completion(ApiResponse.success(track))
-                }
-            } else {
-                withContext(Dispatchers.Main) {
-                    completion(ApiResponse.error(response.message()))
-                }
+            val track = mappers.trackToDomain(response.body()?.track!!)
+            if (isCaching) {
+                cacheTrack(track)
             }
+            completion(ApiResponse.success(track))
+        } else {
+            completion(ApiResponse.error(response.message()))
         }
     }
 

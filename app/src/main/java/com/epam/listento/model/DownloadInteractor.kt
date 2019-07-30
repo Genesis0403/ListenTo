@@ -7,19 +7,13 @@ import android.support.v4.media.MediaMetadataCompat
 import androidx.preference.PreferenceManager
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
-import com.epam.listento.model.player.utils.albumCover
-import com.epam.listento.model.player.utils.artist
-import com.epam.listento.model.player.utils.duration
-import com.epam.listento.model.player.utils.title
+import com.epam.listento.model.player.utils.*
 import com.epam.listento.repository.global.AudioRepository
 import com.epam.listento.repository.global.FileRepository
 import com.epam.listento.repository.global.StorageRepository
 import com.epam.listento.repository.global.TrackRepository
 import com.epam.listento.utils.ContextProvider
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.*
 import java.lang.Exception
 import java.net.URL
 import javax.inject.Inject
@@ -35,6 +29,9 @@ class DownloadInteractor @Inject constructor(
     private companion object {
         private const val FAILED_TO_LOAD_TRACK = "Failed to load track"
     }
+
+    private var fetchJob: Job? = null
+    private var downloadJob: Job? = null
 
     private val metadataBuilder = MediaMetadataCompat.Builder()
 
@@ -64,46 +61,22 @@ class DownloadInteractor @Inject constructor(
     }
 
     fun downloadTrack(
-        track: Track,
-        completion: (ApiResponse<Uri>) -> Unit
-    ) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(contextProvider.context())
-        val isCaching = prefs.getBoolean(contextProvider.getString(R.string.default_caching_key), false)
-        val trackName = "${track.artist?.name}-${track.title}.mp3"
-        if (trackRepo.checkTrackExistence(trackName)) {
-            val uri = trackRepo.fetchTrackUri(trackName)
-            // TODO implement caching if not cached
-            completion(ApiResponse.success(uri))
-        } else {
-            fetchTrack(track.id, isCaching) { url ->
-                if (url.status.isSuccess() && url.body != null) {
-                    saveFileToDevice(trackName, url.body) { result ->
-                        completion(result)
-                    }
-                } else {
-                    completion(ApiResponse.error(url.error!!))
-                }
-            }
-        }
-    }
-
-    fun downloadTrack(
         track: MediaMetadataCompat,
         completion: (ApiResponse<Uri>) -> Unit
     ) {
         val prefs = PreferenceManager.getDefaultSharedPreferences(contextProvider.context())
         val isCaching = prefs.getBoolean(contextProvider.getString(R.string.default_caching_key), false)
-        val description = track.description
-        val trackName = "${description.subtitle}-${description.title}.mp3"
-        val id = description.mediaId?.toInt() ?: return
+        val trackName = "${track.artist}-${track.title}.mp3"
         if (trackRepo.checkTrackExistence(trackName)) {
             val uri = trackRepo.fetchTrackUri(trackName)
-            // TODO implement caching if not cached
+            if (isCaching) {
+                fetchTrack(track.id.toInt(), isCaching) {}
+            }
             completion(ApiResponse.success(uri))
         } else {
-            fetchTrack(id, isCaching) { url ->
+            fetchTrack(track.id.toInt(), isCaching) { url ->
                 if (url.status.isSuccess() && url.body != null) {
-                    saveFileToDevice(trackName, url.body) { result ->
+                    downloadFile(trackName, url.body) { result ->
                         completion(result)
                     }
                 } else {
@@ -116,32 +89,40 @@ class DownloadInteractor @Inject constructor(
     private fun fetchTrack(
         id: Int,
         isCaching: Boolean,
-        completion: (ApiResponse<String>) -> Unit
+        completion: suspend (ApiResponse<String>) -> Unit
     ) {
-        trackRepo.fetchTrack(id, isCaching) { response ->
-            if (response.status.isSuccess() && response.body != null) {
-                storageRepo.fetchStorage(response.body.storageDir!!) { storage ->
-                    if (storage.status.isSuccess() && storage.body != null) {
-                        val url = audioRepo.fetchAudioUrl(storage.body)
-                        completion(ApiResponse.success(url))
-                    } else {
-                        completion(ApiResponse.error(storage.error!!))
+        fetchJob?.cancel()
+        fetchJob = GlobalScope.launch(Dispatchers.IO) {
+            trackRepo.fetchTrack(id, isCaching) { response ->
+                if (response.status.isSuccess() && response.body != null) {
+                    storageRepo.fetchStorage(response.body.storageDir!!) { storage ->
+                        if (storage.status.isSuccess() && storage.body != null) {
+                            val url = audioRepo.fetchAudioUrl(storage.body)
+                            completion(ApiResponse.success(url))
+                        } else {
+                            completion(ApiResponse.error(storage.error!!))
+                        }
                     }
                 }
             }
         }
     }
 
-    private fun saveFileToDevice(
+    private fun downloadFile(
         trackName: String,
         url: String,
         completion: (ApiResponse<Uri>) -> Unit
     ) {
-        fileRepo.downloadTrack(trackName, url) { response ->
-            if (response.isSuccessful && response.body() != null) {
-                completion(ApiResponse.success(response.body()))
-            } else {
-                completion(ApiResponse.error(response.message()))
+        downloadJob?.cancel()
+        downloadJob = GlobalScope.launch(Dispatchers.IO) {
+            fileRepo.downloadTrack(trackName, url) { response ->
+                withContext(Dispatchers.Main) {
+                    if (response.isSuccessful && response.body() != null) {
+                        completion(ApiResponse.success(response.body()))
+                    } else {
+                        completion(ApiResponse.error(response.message()))
+                    }
+                }
             }
         }
     }

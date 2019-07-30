@@ -6,7 +6,6 @@ import android.util.Log
 import com.epam.listento.api.YandexService
 import com.epam.listento.repository.global.FileRepository
 import com.epam.listento.utils.ContextProvider
-import kotlinx.coroutines.*
 import okhttp3.ResponseBody
 import retrofit2.Response
 import java.io.File
@@ -21,32 +20,23 @@ class FileRepositoryImpl @Inject constructor(
     private val contextProvider: ContextProvider
 ) : FileRepository {
 
-    private var job: Job? = null
-
-    override fun downloadTrack(
+    override suspend fun downloadTrack(
         trackName: String,
         audioUrl: String,
-        completion: (Response<Uri>) -> Unit
+        completion: suspend (Response<Uri>) -> Unit
     ) {
-        job?.cancel()
-        job = GlobalScope.launch(Dispatchers.IO) {
-            try {
-                val response = service.downloadTrack(audioUrl)
-                if (response.isSuccessful) {
-                    val url = response.body()?.let {
-                        downloadFile(trackName, it)
-                    }
-                    withContext(Dispatchers.Main) {
-                        completion(Response.success(url))
-                    }
-                } else {
-                    withContext(Dispatchers.Main) {
-                        completion(Response.error(response.code(), response.errorBody()))
-                    }
+        try {
+            val response = service.downloadTrack(audioUrl)
+            if (response.isSuccessful) {
+                val url = response.body()?.let {
+                    downloadFile(trackName, it)
                 }
-            } catch (e: Exception) {
-                Log.e(TAG, "$e")
+                completion(Response.success(url))
+            } else {
+                completion(Response.error(response.code(), response.errorBody()))
             }
+        } catch (e: Exception) {
+            Log.e(TAG, "$e")
         }
     }
 
