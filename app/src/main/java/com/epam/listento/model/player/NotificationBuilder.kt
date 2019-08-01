@@ -14,6 +14,7 @@ import androidx.core.app.NotificationCompat
 import androidx.media.app.NotificationCompat.MediaStyle
 import androidx.media.session.MediaButtonReceiver
 import com.epam.listento.R
+import com.epam.listento.model.PlayerService
 import com.epam.listento.model.player.utils.isPlaying
 import com.epam.listento.ui.PlayerActivity
 import com.epam.listento.utils.ContextProvider
@@ -22,6 +23,8 @@ import javax.inject.Inject
 const val CHANNEL_ID = "LISTEN_TO_ID"
 const val NOTIFICATION_ID = 1
 const val IS_ALARM_ONCE = true
+const val IS_SHOW_WHEN = false
+const val STOP_ACTION = "com.epam.listento.STOP_ACTION"
 
 class NotificationBuilder @Inject constructor(
     private val contextProvider: ContextProvider
@@ -67,9 +70,13 @@ class NotificationBuilder @Inject constructor(
     )
 
     private val stopIntent =
-        MediaButtonReceiver.buildMediaButtonPendingIntent(
+        PendingIntent.getService(
             contextProvider.context(),
-            PlaybackStateCompat.ACTION_STOP
+            0,
+            Intent(contextProvider.context(), PlayerService::class.java).also {
+                it.action = STOP_ACTION
+            },
+            0
         )
 
     private val contentIntent = PendingIntent.getActivity(
@@ -112,6 +119,7 @@ class NotificationBuilder @Inject constructor(
             .setContentIntent(contentIntent)
             .setDeleteIntent(stopIntent)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setShowWhen(IS_SHOW_WHEN)
             .build()
     }
 

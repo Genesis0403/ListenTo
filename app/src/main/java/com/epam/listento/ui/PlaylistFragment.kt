@@ -25,7 +25,8 @@ import com.epam.listento.R
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.MediaSessionManager
-import com.epam.listento.model.player.MusicSource
+import com.epam.listento.model.player.utils.id
+import com.epam.listento.ui.viewmodels.MainViewModel
 import kotlinx.android.synthetic.main.tracks_fragment.*
 import javax.inject.Inject
 
@@ -50,9 +51,8 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
 
     override fun onClick(track: Track) {
         binder?.let {
-            val title = sessionManager.currentPlaying.value?.description?.title
-            val artist = sessionManager.currentPlaying.value?.description?.subtitle
-            if (track.artist?.name == artist && track.title == title) {
+            val current = sessionManager.currentPlaying.value
+            if (current?.id == track.id.toString()) {
                 findNavController().navigate(R.id.playerActivity)
             } else {
                 mainViewModel.cachedTracks.value?.let {
@@ -71,7 +71,6 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
-        activity?.bindService(Intent(activity, PlayerService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
 
     override fun onCreateView(
@@ -112,12 +111,21 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
         tracksAdapter.setTracks(tracks)
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "DESTROYED")
+    override fun onStart() {
+        super.onStart()
+        activity?.bindService(Intent(activity, PlayerService::class.java), connection, Context.BIND_AUTO_CREATE)
+    }
+
+    override fun onPause() {
+        super.onPause()
         binder = null
         controller = null
         activity?.unbindService(connection)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "DESTROYED")
     }
 
     private val connection = object : ServiceConnection {

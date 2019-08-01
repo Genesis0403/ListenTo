@@ -2,6 +2,7 @@ package com.epam.listento.domain
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import java.util.*
 
 @Entity
 data class DomainTrack(
@@ -11,5 +12,6 @@ data class DomainTrack(
     val durationMs: Long?,
     val title: String?,
     val albums: List<DomainAlbum>?,
-    val artists: List<DomainArtist>?
+    val artists: List<DomainArtist>?,
+    var timestamp: Date? = null
 )

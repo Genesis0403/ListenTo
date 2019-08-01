@@ -26,7 +26,7 @@ class TracksRepositoryImpl @Inject constructor(
 
     override suspend fun getCache(completion: (LiveData<List<Track>>) -> Unit) {
         val tracks =
-            tracksDao.getTracks().value?.mapNotNull { platformMappers.mapTrack(it) }?.toList()
+            tracksDao.getLiveDataTracks().value?.mapNotNull { platformMappers.mapTrack(it) }?.toList()
                 ?: emptyList()
         val result = MutableLiveData<List<Track>>().apply {
             value = tracks

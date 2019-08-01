@@ -1,7 +1,6 @@
 package com.epam.listento.repository.global
 
 import android.net.Uri
-import kotlinx.coroutines.Job
 import retrofit2.Response
 
 interface FileRepository {

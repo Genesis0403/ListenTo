@@ -9,6 +9,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
 import com.epam.listento.App
 import com.epam.listento.R
+import com.epam.listento.ui.viewmodels.MainViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import javax.inject.Inject
 

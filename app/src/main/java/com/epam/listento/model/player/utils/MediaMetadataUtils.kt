@@ -12,7 +12,7 @@ inline val MediaMetadataCompat.artist: String
 inline val MediaMetadataCompat.title: String
     get() = getString(MediaMetadataCompat.METADATA_KEY_TITLE)
 
-inline val MediaMetadataCompat.albumCover: String?
+inline val MediaMetadataCompat.albumCover: String
     get() = getString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI)
 
 inline val MediaMetadataCompat.bitmap: Bitmap?

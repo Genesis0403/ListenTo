@@ -26,6 +26,7 @@ import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.model.MsMapper
 import com.epam.listento.model.PlayerService
+import com.epam.listento.ui.viewmodels.PlayerViewModel
 import kotlinx.android.synthetic.main.player_fragment.*
 import javax.inject.Inject
 

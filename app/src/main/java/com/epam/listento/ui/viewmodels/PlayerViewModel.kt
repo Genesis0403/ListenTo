@@ -1,4 +1,4 @@
-package com.epam.listento.ui
+package com.epam.listento.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.CoroutineScope

@@ -28,6 +28,7 @@ import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.MediaSessionManager
+import com.epam.listento.ui.viewmodels.MainViewModel
 import com.epam.listento.utils.DebounceSearchListener
 import kotlinx.android.synthetic.main.tracks_fragment.*
 import javax.inject.Inject
@@ -74,6 +75,10 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
+    }
+
+    override fun onStart() {
+        super.onStart()
         activity?.bindService(Intent(activity, PlayerService::class.java), connection, Context.BIND_AUTO_CREATE)
     }
 
@@ -131,12 +136,16 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onPause() {
+        super.onPause()
         Log.d(TAG, "DESTROYED")
         binder = null
         controller = null
         activity?.unbindService(connection)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
     }
 
     private val connection = object : ServiceConnection {

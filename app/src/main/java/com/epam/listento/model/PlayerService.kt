@@ -1,6 +1,9 @@
 package com.epam.listento.model
 
-import android.app.*
+import android.app.Notification
+import android.app.NotificationManager
+import android.app.PendingIntent
+import android.app.Service
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -16,15 +19,16 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.media.session.MediaButtonReceiver
 import com.epam.listento.App
-import com.epam.listento.model.player.MusicSource
 import com.epam.listento.model.player.NOTIFICATION_ID
 import com.epam.listento.model.player.NotificationBuilder
-import com.epam.listento.model.player.PlayerPreparer
+import com.epam.listento.model.player.STOP_ACTION
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.ui.MainActivity
-import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioAttributes
-import java.lang.Exception
 import javax.inject.Inject
 
 class PlayerService : Service() {
@@ -64,7 +68,13 @@ class PlayerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        MediaButtonReceiver.handleIntent(mediaSession, intent)
+        intent?.let {
+            if (it.action == STOP_ACTION) {
+                controller.transportControls.stop()
+            } else {
+                MediaButtonReceiver.handleIntent(mediaSession, intent)
+            }
+        }
         return super.onStartCommand(intent, flags, startId)
     }
 
@@ -100,9 +110,7 @@ class PlayerService : Service() {
             downloadInteractor,
             player
         ) { metadata, isActive, state ->
-            if (metadata != null) {
-                mediaSession?.setMetadata(metadata)
-            }
+            mediaSession?.setMetadata(metadata)
             updateSessionData(isActive, state)
         }
 

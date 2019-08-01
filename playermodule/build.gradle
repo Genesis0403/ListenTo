@@ -43,6 +43,17 @@ dependencies {
 
     //Media
     implementation 'androidx.media:media:1.1.0-rc01'
+
+    //Dagger 2
+    implementation "com.google.dagger:dagger:2.20"
+    kapt "com.google.dagger:dagger-compiler:2.20"
+    kapt 'com.google.dagger:dagger-android-processor:2.20'
+    implementation 'com.google.dagger:dagger-android-support:2.20'
+    compileOnly "org.glassfish:javax.annotation:3.1.1"
+
+    //ExoPlayer
+    implementation 'com.google.android.exoplayer:exoplayer:2.10.2'
+    implementation "com.google.android.exoplayer:extension-mediasession:2.10.2"
 }
 repositories {
     mavenCentral()

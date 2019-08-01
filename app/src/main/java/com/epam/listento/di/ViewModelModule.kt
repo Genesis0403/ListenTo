@@ -2,8 +2,8 @@ package com.epam.listento.di
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
-import com.epam.listento.ui.MainViewModel
-import com.epam.listento.ui.PlayerViewModel
+import com.epam.listento.ui.viewmodels.MainViewModel
+import com.epam.listento.ui.viewmodels.PlayerViewModel
 import dagger.Binds
 import dagger.Module
 import dagger.multibindings.IntoMap

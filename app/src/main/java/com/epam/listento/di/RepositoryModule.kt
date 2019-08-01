@@ -9,8 +9,6 @@ import com.epam.listento.domain.*
 import com.epam.listento.model.Album
 import com.epam.listento.model.Artist
 import com.epam.listento.model.Track
-import com.epam.listento.model.player.ListSource
-import com.epam.listento.model.player.MusicSource
 import com.epam.listento.repository.*
 import com.epam.listento.repository.global.*
 import com.epam.listento.utils.ContextProvider

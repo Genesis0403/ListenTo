@@ -13,9 +13,12 @@ interface TracksDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insertTrack(track: DomainTrack)
 
-    @Query("SELECT * FROM DomainTrack")
-    fun getTracks(): LiveData<List<DomainTrack>>
+    @Query("SELECT * FROM DomainTrack ORDER BY timestamp DESC")
+    fun getLiveDataTracks(): LiveData<List<DomainTrack>>
 
-    @Query("DELETE FROM DomainTrack where id = :id")
+    @Query("SELECT * FROM DomainTrack")
+    fun getTracks(): List<DomainTrack>
+
+    @Query("DELETE FROM DomainTrack WHERE id = :id")
     fun deleteTrackById(id: Int)
 }

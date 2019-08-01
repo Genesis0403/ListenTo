@@ -1,4 +1,4 @@
-package com.epam.listento.ui
+package com.epam.listento.ui.viewmodels
 
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -29,12 +29,12 @@ class MainViewModel @Inject constructor(
 
     val lastQuery: MutableLiveData<String> = MutableLiveData()
     private var job: Job? = null
-    private var queryJob: Job? = null
 
     private val _tracks: MutableLiveData<ApiResponse<List<Track>>> = MutableLiveData()
     val tracks: LiveData<ApiResponse<List<Track>>> get() = _tracks
 
-    val cachedTracks: LiveData<List<Track>> = Transformations.switchMap(dao.getTracks()) { domain ->
+    val cachedTracks: LiveData<List<Track>> = Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
+        domain.forEach { println(it) }
         val tracks = domain.mapNotNull { mappers.mapTrack(it) }.toList()
         MutableLiveData<List<Track>>().apply {
             value = tracks

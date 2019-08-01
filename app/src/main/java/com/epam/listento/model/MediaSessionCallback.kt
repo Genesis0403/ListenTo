@@ -6,6 +6,7 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import com.epam.listento.R
+import com.epam.listento.model.player.utils.id
 import com.epam.listento.repository.global.MusicRepository
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
@@ -20,6 +21,7 @@ class MediaSessionCallback(
     private val onSessionUpdate: (metadata: MediaMetadataCompat?, isActive: Boolean, state: Int) -> Unit
 ) : MediaSessionCompat.Callback() {
 
+    private val emptyMetadata = MediaMetadataCompat.Builder().build()
     private var currentState = PlaybackStateCompat.STATE_STOPPED
     private var currentPlaying: MediaMetadataCompat? = null
 
@@ -34,10 +36,10 @@ class MediaSessionCallback(
         downloadInteractor.fillMetadata(track) { metadata ->
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
 
-            if (currentState == PlaybackStateCompat.STATE_PAUSED && currentPlaying == track) {
+            if (currentState == PlaybackStateCompat.STATE_PAUSED && currentPlaying?.id == track.id) {
                 player.playWhenReady = true
             } else {
-                currentPlaying = track
+                currentPlaying = metadata
                 downloadInteractor.downloadTrack(track) { result ->
                     if (result.status.isSuccess() && result.body != null) {
                         prepareToPlay(result.body)
@@ -55,7 +57,7 @@ class MediaSessionCallback(
         if (player.playWhenReady) {
             player.playWhenReady = false
         }
-        onSessionUpdate(null, true, PlaybackStateCompat.STATE_PAUSED)
+        onSessionUpdate(currentPlaying, true, PlaybackStateCompat.STATE_PAUSED)
         currentState = PlaybackStateCompat.STATE_PAUSED
     }
 
@@ -65,7 +67,7 @@ class MediaSessionCallback(
         if (player.playWhenReady) {
             player.playWhenReady = false
         }
-        onSessionUpdate(null, false, PlaybackStateCompat.STATE_STOPPED)
+        onSessionUpdate(emptyMetadata, false, PlaybackStateCompat.STATE_STOPPED)
 
         currentState = PlaybackStateCompat.STATE_STOPPED
         currentPlaying = null
@@ -79,10 +81,10 @@ class MediaSessionCallback(
         }
 
         val track = musicRepo.getNext()
-        currentPlaying = track
 
         downloadInteractor.fillMetadata(track) { metadata ->
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
+            currentPlaying = metadata
 
             downloadInteractor.downloadTrack(track) { result ->
                 if (result.status.isSuccess() && result.body != null) {
@@ -102,10 +104,10 @@ class MediaSessionCallback(
         }
 
         val track = musicRepo.getPrevious()
-        currentPlaying = track
 
         downloadInteractor.fillMetadata(track) { metadata ->
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
+            currentPlaying = metadata
 
             downloadInteractor.downloadTrack(track) { result ->
                 if (result.status.isSuccess() && result.body != null) {
