@@ -6,6 +6,7 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 import android.view.LayoutInflater
@@ -28,6 +29,8 @@ import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.MediaSessionManager
+import com.epam.listento.model.player.PlaybackState
+import com.epam.listento.model.player.utils.id
 import com.epam.listento.ui.viewmodels.MainViewModel
 import com.epam.listento.utils.DebounceSearchListener
 import kotlinx.android.synthetic.main.tracks_fragment.*
@@ -36,10 +39,7 @@ import javax.inject.Inject
 class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     companion object {
-        private const val TAG = "TRACKS_FRAGMENT"
-        private const val RECYCLER_POSITION = "RECYCLER_POSITION"
-
-        fun newInstance() = SearchFragment()
+        private const val TAG = "SEARCH_FRAGMENT"
     }
 
     @Inject
@@ -54,9 +54,12 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     override fun onClick(track: Track) {
         binder?.let {
-            val title = sessionManager.currentPlaying.value?.description?.title
-            val artist = sessionManager.currentPlaying.value?.description?.subtitle
-            if (track.artist?.name == artist && track.title == title) {
+            val current = sessionManager.currentPlaying.value
+            val state = sessionManager.isPlaying.value
+            if (state != PlaybackState.STOPPED
+                && state != PlaybackState.PAUSED
+                && current?.id == track.id.toString()
+            ) {
                 findNavController().navigate(R.id.playerActivity)
             } else {
                 mainViewModel.tracks.value?.let {
@@ -121,7 +124,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
     private fun listenToSearchViewQuery(searchView: SearchView, progress: ProgressBar) {
         searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
             if (query.isNotEmpty()) {
-                progress.visibility = ProgressBar.VISIBLE
+                progress.visibility = View.VISIBLE
                 mainViewModel.fetchTracks(query)
             }
         })
@@ -129,8 +132,9 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     private fun observeTrackList(response: ApiResponse<List<Track>>) {
         if (response.status.isSuccess()) {
-            progress.visibility = ProgressBar.GONE
-            tracksAdapter.setTracks(response.body ?: emptyList())
+            val newData = response.body ?: emptyList()
+            tracksAdapter.submitList(newData)
+            progress.visibility = View.GONE
         } else {
             Toast.makeText(context, getString(R.string.failed_tracks_toast), Toast.LENGTH_SHORT).show()
         }
@@ -142,10 +146,6 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         binder = null
         controller = null
         activity?.unbindService(connection)
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
     }
 
     private val connection = object : ServiceConnection {
@@ -162,10 +162,19 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
                 sessionManager = MediaSessionManager.getInstance(app, token)
                 try {
                     controller = MediaControllerCompat(requireActivity(), token)
+                    observeCurrentPlaying()
                 } catch (e: Exception) {
                     controller = null
                 }
             }
         }
+    }
+
+    private fun observeCurrentPlaying() {
+        sessionManager.currentPlaying.observe(this, Observer<MediaMetadataCompat> { item ->
+            sessionManager.isPlaying.value?.let { isPlaying ->
+                mainViewModel.searchPlaybackChange(item.id.toInt(), isPlaying)
+            }
+        })
     }
 }

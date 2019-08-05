@@ -1,6 +1,7 @@
 package com.epam.listento.model
 
 import android.support.v4.media.MediaMetadataCompat
+import androidx.recyclerview.widget.DiffUtil
 import androidx.room.Entity
 import androidx.room.PrimaryKey
 import java.util.concurrent.TimeUnit
@@ -13,8 +14,29 @@ data class Track(
     val title: String,
     val artist: Artist?,
     val storageDir: String,
-    val album: Album?
-)
+    val album: Album?,
+    var res: Int = NO_RES
+) {
+    companion object {
+
+        const val NO_RES = -1
+        const val RES_PAYLOAD = "res_payload"
+
+        val diffCallback = object : DiffUtil.ItemCallback<Track>() {
+            override fun areItemsTheSame(oldItem: Track, newItem: Track): Boolean {
+                return oldItem.id == newItem.id
+            }
+
+            override fun areContentsTheSame(oldItem: Track, newItem: Track): Boolean {
+                return oldItem == newItem
+            }
+
+            override fun getChangePayload(oldItem: Track, newItem: Track): Any? {
+                return if (oldItem.res != newItem.res) RES_PAYLOAD else super.getChangePayload(oldItem, newItem)
+            }
+        }
+    }
+}
 
 fun Track.durationToString(): String {
     return String.format(

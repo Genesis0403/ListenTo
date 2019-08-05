@@ -6,6 +6,9 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import com.epam.listento.R
+import com.epam.listento.model.player.utils.EMPTY_DURATION
+import com.epam.listento.model.player.utils.EMPTY_ID
+import com.epam.listento.model.player.utils.UNKNOWN
 import com.epam.listento.model.player.utils.id
 import com.epam.listento.repository.global.MusicRepository
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -21,7 +24,12 @@ class MediaSessionCallback(
     private val onSessionUpdate: (metadata: MediaMetadataCompat?, isActive: Boolean, state: Int) -> Unit
 ) : MediaSessionCompat.Callback() {
 
-    private val emptyMetadata = MediaMetadataCompat.Builder().build()
+    private val emptyMetadata = MediaMetadataCompat.Builder()
+        .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, EMPTY_ID)
+        .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, UNKNOWN)
+        .putString(MediaMetadataCompat.METADATA_KEY_TITLE, UNKNOWN)
+        .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, EMPTY_DURATION)
+        .build()
     private var currentState = PlaybackStateCompat.STATE_STOPPED
     private var currentPlaying: MediaMetadataCompat? = null
 

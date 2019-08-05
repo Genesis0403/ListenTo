@@ -7,7 +7,6 @@ import android.support.v4.media.session.MediaSessionCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
-import com.epam.listento.model.player.utils.isPlaying
 
 class MediaSessionManager(context: Context, token: MediaSessionCompat.Token) {
 
@@ -31,8 +30,8 @@ class MediaSessionManager(context: Context, token: MediaSessionCompat.Token) {
     val currentPlaying: LiveData<MediaMetadataCompat>
         get() = _currentPlaying
 
-    private val _isPlaying = MutableLiveData<Boolean>()
-    val isPlaying: LiveData<Boolean>
+    private val _isPlaying = MutableLiveData<PlaybackState>()
+    val isPlaying: LiveData<PlaybackState>
         get() = _isPlaying
 
     private val callback = ControllerCallback()
@@ -49,7 +48,13 @@ class MediaSessionManager(context: Context, token: MediaSessionCompat.Token) {
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             super.onPlaybackStateChanged(state)
-            _isPlaying.postValue(state?.isPlaying ?: false)
+            val playback = when (state?.state) {
+                PlaybackStateCompat.STATE_PLAYING -> PlaybackState.PLAYING
+                PlaybackStateCompat.STATE_PAUSED -> PlaybackState.PAUSED
+                PlaybackStateCompat.STATE_STOPPED -> PlaybackState.STOPPED
+                else -> PlaybackState.UNKNOWN
+            }
+            _isPlaying.postValue(playback)
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
@@ -60,6 +65,7 @@ class MediaSessionManager(context: Context, token: MediaSessionCompat.Token) {
         override fun onSessionDestroyed() {
             super.onSessionDestroyed()
             controller.unregisterCallback(callback)
+            instance = null
         }
     }
 }

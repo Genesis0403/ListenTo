@@ -6,12 +6,12 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.os.IBinder
+import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import androidx.appcompat.widget.Toolbar
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
@@ -25,6 +25,7 @@ import com.epam.listento.R
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.MediaSessionManager
+import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.player.utils.id
 import com.epam.listento.ui.viewmodels.MainViewModel
 import kotlinx.android.synthetic.main.tracks_fragment.*
@@ -34,9 +35,6 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
 
     companion object {
         private const val TAG = "PLAYLIST_FRAGMENT"
-        private const val RECYCLER_POSITION = "RECYCLER_POSITION"
-
-        fun newInstance() = PlaylistFragment()
     }
 
     @Inject
@@ -52,12 +50,16 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
     override fun onClick(track: Track) {
         binder?.let {
             val current = sessionManager.currentPlaying.value
-            if (current?.id == track.id.toString()) {
+            val state = sessionManager.isPlaying.value
+            if (state != PlaybackState.STOPPED
+                && state != PlaybackState.PAUSED
+                && current?.id == track.id.toString()
+            ) {
                 findNavController().navigate(R.id.playerActivity)
             } else {
                 mainViewModel.cachedTracks.value?.let {
                     mainViewModel.itemClick(track, it)
-                    sessionManager.transportControls.play()
+                    controller?.transportControls?.play()
                 }
             }
         }
@@ -84,7 +86,6 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         val recycler = view.findViewById<RecyclerView>(R.id.tracksRecyclerView)
-        val progress = view.findViewById<ProgressBar>(R.id.progress)
 
         activity?.findViewById<Toolbar>(R.id.appToolBar)?.apply {
             menu.clear()
@@ -98,17 +99,13 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
         }
 
         mainViewModel.cachedTracks.observe(this, Observer<List<Track>> { tracks ->
-            if (!tracks.isNullOrEmpty()) {
-                observeTrackList(tracks)
-            } else {
-                progress.visibility = View.VISIBLE
-            }
+            observeTrackList(tracks)
         })
     }
 
     private fun observeTrackList(tracks: List<Track>) {
-        progress.visibility = ProgressBar.GONE
-        tracksAdapter.setTracks(tracks)
+        progress.visibility = if (!tracks.isNullOrEmpty()) View.GONE else View.VISIBLE
+        tracksAdapter.submitList(tracks)
     }
 
     override fun onStart() {
@@ -142,10 +139,19 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
                 sessionManager = MediaSessionManager.getInstance(app, token)
                 try {
                     controller = MediaControllerCompat(requireActivity(), token)
+                    observeCurrentPlaying()
                 } catch (e: Exception) {
                     controller = null
                 }
             }
         }
+    }
+
+    private fun observeCurrentPlaying() {
+        sessionManager.currentPlaying.observe(this, Observer<MediaMetadataCompat> { item ->
+            sessionManager.isPlaying.value?.let { isPlaying ->
+                mainViewModel.cachePlaybackChange(item.id.toInt(), isPlaying)
+            }
+        })
     }
 }

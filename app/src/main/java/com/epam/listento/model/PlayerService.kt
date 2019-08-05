@@ -24,10 +24,7 @@ import com.epam.listento.model.player.NotificationBuilder
 import com.epam.listento.model.player.STOP_ACTION
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.ui.MainActivity
-import com.google.android.exoplayer2.C
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.Player
-import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.*
 import com.google.android.exoplayer2.audio.AudioAttributes
 import javax.inject.Inject
 
@@ -50,7 +47,7 @@ class PlayerService : Service() {
     @Inject
     lateinit var player: SimpleExoPlayer
 
-    private var mediaSession: MediaSessionCompat? = null
+    private lateinit var mediaSession: MediaSessionCompat
     lateinit var controller: MediaControllerCompat
 
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
@@ -62,6 +59,7 @@ class PlayerService : Service() {
         getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
     private var isForeground = false
+    private val callback = ControllerCallback()
 
     override fun onBind(intent: Intent?): IBinder? {
         return PlayerBinder()
@@ -105,26 +103,26 @@ class PlayerService : Service() {
         mediaSession = initMediaSession()
 
         mediaSessionCallback = MediaSessionCallback(
-            applicationContext,
+            this,
             musicRepo,
             downloadInteractor,
             player
         ) { metadata, isActive, state ->
-            mediaSession?.setMetadata(metadata)
+            mediaSession.setMetadata(metadata)
             updateSessionData(isActive, state)
         }
 
-        mediaSession?.setCallback(mediaSessionCallback)
+        mediaSession.setCallback(mediaSessionCallback)
 
-        controller = MediaControllerCompat(this, mediaSession!!).also {
-            it.registerCallback(ControllerCallback())
+        controller = MediaControllerCompat(this, mediaSession).also {
+            it.registerCallback(callback)
         }
     }
 
     private fun updateSessionData(isActive: Boolean, state: Int) {
-        mediaSession?.let {
-            it.isActive = isActive
-            it.setPlaybackState(
+        mediaSession.run {
+            this.isActive = isActive
+            setPlaybackState(
                 stateBuilder.setState(
                     state,
                     PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
@@ -158,14 +156,15 @@ class PlayerService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "ON DESTROY")
-        mediaSessionCallback = null
-        mediaSession?.release()
-        mediaSession = null
-        player.release()
+        controller.unregisterCallback(callback)
+        mediaSession.isActive = false
+        mediaSession.setCallback(null)
+        mediaSession.release()
+//        //player.release()
     }
 
     inner class PlayerBinder : Binder() {
-        fun getSessionToken(): MediaSessionCompat.Token? = mediaSession?.sessionToken
+        fun getSessionToken(): MediaSessionCompat.Token? = mediaSession.sessionToken
 
         fun getProgress(): Long = player.currentPosition
     }
@@ -185,7 +184,7 @@ class PlayerService : Service() {
     private fun updateNotification(state: PlaybackStateCompat) {
 
         val notification: Notification? = if (controller.metadata != null) {
-            mediaSession?.let { notificationBuilder.buildNotification(it.sessionToken) }
+            mediaSession.let { notificationBuilder.buildNotification(it.sessionToken) }
         } else {
             null
         }

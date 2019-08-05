@@ -6,6 +6,7 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.cardview.widget.CardView
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
@@ -13,41 +14,55 @@ import com.bumptech.glide.load.resource.bitmap.RoundedCorners
 import com.bumptech.glide.request.RequestOptions
 import com.epam.listento.R
 import com.epam.listento.model.Track
+import com.epam.listento.model.Track.Companion.RES_PAYLOAD
 import com.epam.listento.model.durationToString
 
 private const val CORNERS_RADIUS = 16
 
-class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapter<TracksAdapter.TrackViewHolder>() {
+class TracksAdapter(
+    private val listener: OnClickListener
+) : ListAdapter<Track, TracksAdapter.TrackViewHolder>(Track.diffCallback) {
 
     interface OnClickListener {
         fun onClick(track: Track)
     }
-
-    private val tracks = mutableListOf<Track>()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.track_item, parent, false)
         return TrackViewHolder(view).also { holder ->
             holder.cardView.setOnClickListener {
                 if (holder.adapterPosition != RecyclerView.NO_POSITION) {
-                    val item = tracks[holder.adapterPosition]
+                    val item = getItem(holder.adapterPosition)
                     listener.onClick(item)
                 }
             }
         }
     }
 
-    override fun getItemCount(): Int {
-        return tracks.size
+    override fun onBindViewHolder(holder: TrackViewHolder, position: Int, payloads: MutableList<Any>) {
+        super.onBindViewHolder(holder, position, payloads)
+        if (payloads.isEmpty()) {
+            onBindViewHolder(holder, position)
+        } else {
+            payloads.forEach { payload ->
+                when (payload) {
+                    RES_PAYLOAD -> {
+                        val item = getItem(position)
+                        showPlayback(holder.playbackState, item.res)
+                    }
+                }
+            }
+        }
     }
 
     override fun onBindViewHolder(holder: TrackViewHolder, position: Int) {
-        val item = tracks[position]
+        val item = getItem(position)
         holder.apply {
             artist.text = item.artist?.name
             title.text = item.title
             duration.text = item.durationToString()
             loadImage(cover, item.album?.thumbnailCover)
+            showPlayback(holder.playbackState, item.res)
         }
     }
 
@@ -60,11 +75,14 @@ class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapte
             .into(imageView)
     }
 
-    fun setTracks(data: List<Track>) {
-        with(tracks) {
-            clear()
-            addAll(data)
-            notifyDataSetChanged()
+    private fun showPlayback(imageView: ImageView, iconId: Int) {
+        imageView.visibility = if (iconId == Track.NO_RES) {
+            View.GONE
+        } else {
+            Glide.with(imageView)
+                .load(iconId)
+                .into(imageView)
+            View.VISIBLE
         }
     }
 
@@ -74,5 +92,6 @@ class TracksAdapter(private val listener: OnClickListener) : RecyclerView.Adapte
         val title: TextView = view.findViewById(R.id.title)
         val duration: TextView = view.findViewById(R.id.duration)
         val cardView: CardView = view.findViewById(R.id.cardView)
+        val playbackState: ImageView = view.findViewById(R.id.playbackState)
     }
 }

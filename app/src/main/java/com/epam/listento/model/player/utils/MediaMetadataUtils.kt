@@ -3,6 +3,10 @@ package com.epam.listento.model.player.utils
 import android.graphics.Bitmap
 import android.support.v4.media.MediaMetadataCompat
 
+const val UNKNOWN = "<unknown>"
+const val EMPTY_ID = "-1"
+const val EMPTY_DURATION = 0L
+
 inline val MediaMetadataCompat.id: String
     get() = getString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID)
 

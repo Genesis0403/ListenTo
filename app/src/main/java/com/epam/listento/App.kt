@@ -4,10 +4,6 @@ import android.app.Application
 import com.epam.listento.di.AppComponent
 import com.epam.listento.di.DaggerAppComponent
 
-// TODO download bitmap with Glide get() function
-// TODO implement MusicSource where you will download tracks and pass them into service
-// TODO implement preparation of Session via ExoPlayer (onPrepareFromMediaId)
-
 class App : Application() {
 
     companion object {
@@ -23,4 +19,5 @@ class App : Application() {
             .application(this)
             .build()
     }
+    //TODO stop service if not stopped
 }
