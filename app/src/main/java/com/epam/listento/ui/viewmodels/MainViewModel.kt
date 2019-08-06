@@ -1,14 +1,16 @@
 package com.epam.listento.ui.viewmodels
 
+import android.widget.Toast
 import androidx.lifecycle.*
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.mapTrack
 import com.epam.listento.db.TracksDao
+import com.epam.listento.model.CacheInteractor
+import com.epam.listento.model.DownloadInteractor
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.player.PlaybackState.*
-import com.epam.listento.model.player.utils.id
 import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.repository.global.TracksRepository
@@ -23,6 +25,8 @@ class MainViewModel @Inject constructor(
     private val contextProvider: ContextProvider,
     private val tracksRepo: TracksRepository,
     private val musicRepo: MusicRepository,
+    private val cacheInteractor: CacheInteractor,
+    private val downloadInteractor: DownloadInteractor,
     dao: TracksDao,
     mappers: PlatformMappers
 ) : ViewModel() {
@@ -56,6 +60,26 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    fun cacheTrack(id: Int, title: String, artist: String) {
+        downloadInteractor.downloadTrack(id, title, artist) { response ->
+            val context = contextProvider.context()
+            val message = if (response.status.isSuccess()) {
+                context.getString(R.string.success_caching)
+            } else {
+                context.getString(R.string.failde_caching)
+            }
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    fun uncacheTrack(id: Int, title: String, atist: String) {
+        cacheInteractor.uncacheTrack(id)
+    }
+
+    fun clearCache() {
+        cacheInteractor.clearAllCache()
+    }
+
     fun itemClick(track: Track, list: List<Track>) {
         val metadata = list.map { it.toMetadata() }
         musicRepo.run {
@@ -86,10 +110,11 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun searchPlaybackChange( //TODO REFACTOR!!!
+    fun searchPlaybackChange(
         id: Int,
         state: PlaybackState
     ) {
+        // TODO REFACTOR!!!
         playbackJob?.cancel()
         playbackJob = viewModelScope.launch(Dispatchers.Default) {
             val newRes = when (state) {

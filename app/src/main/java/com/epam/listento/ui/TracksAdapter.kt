@@ -25,18 +25,12 @@ class TracksAdapter(
 
     interface OnClickListener {
         fun onClick(track: Track)
+        fun onLongClick(track: Track)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.track_item, parent, false)
-        return TrackViewHolder(view).also { holder ->
-            holder.cardView.setOnClickListener {
-                if (holder.adapterPosition != RecyclerView.NO_POSITION) {
-                    val item = getItem(holder.adapterPosition)
-                    listener.onClick(item)
-                }
-            }
-        }
+        return TrackViewHolder(view, listener)
     }
 
     override fun onBindViewHolder(holder: TrackViewHolder, position: Int, payloads: MutableList<Any>) {
@@ -86,12 +80,31 @@ class TracksAdapter(
         }
     }
 
-    class TrackViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+    inner class TrackViewHolder(view: View, listener: OnClickListener) : RecyclerView.ViewHolder(view) {
         val cover: ImageView = view.findViewById(R.id.cover)
         val artist: TextView = view.findViewById(R.id.artist)
         val title: TextView = view.findViewById(R.id.title)
         val duration: TextView = view.findViewById(R.id.duration)
         val cardView: CardView = view.findViewById(R.id.cardView)
         val playbackState: ImageView = view.findViewById(R.id.playbackState)
+
+        init {
+            cardView.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    val item = getItem(adapterPosition)
+                    listener.onClick(item)
+                }
+            }
+
+            cardView.setOnLongClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    val item = getItem(adapterPosition)
+                    listener.onLongClick(item)
+                    true
+                } else {
+                    false
+                }
+            }
+        }
     }
 }

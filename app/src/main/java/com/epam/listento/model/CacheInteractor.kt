@@ -1,31 +1,57 @@
 package com.epam.listento.model
 
-import android.support.v4.media.MediaMetadataCompat
 import com.epam.listento.db.AppDatabase
 import com.epam.listento.db.TracksDao
-import com.epam.listento.model.player.utils.id
+import com.epam.listento.repository.global.TrackRepository
 import kotlinx.coroutines.*
 import javax.inject.Inject
 
 class CacheInteractor @Inject constructor(
+    private val trackRepo: TrackRepository,
     private val db: AppDatabase,
     private val dao: TracksDao
 ) {
 
-    private var cacheJob: Job? = null
+    private var checkJob: Job? = null
 
     fun isTrackInCache(
-        track: MediaMetadataCompat,
+        id: Int,
         completion: (isInCache: Boolean) -> Unit
     ) {
-        cacheJob?.cancel()
-        cacheJob = GlobalScope.launch(Dispatchers.IO) {
+        checkJob?.cancel()
+        checkJob = GlobalScope.launch(Dispatchers.IO) {
             db.runInTransaction {
                 val tracks = dao.getTracks()
-                val isInCache = tracks.any { it.id == track.id?.toInt() }
+                val isInCache = tracks.any { it.id == id }
                 CoroutineScope(Dispatchers.Main).launch {
                     completion(isInCache)
                 }
+            }
+        }
+    }
+
+    fun cacheTrack(id: Int, completion: (isSuccess: Boolean) -> Unit) {
+        GlobalScope.launch(Dispatchers.IO) {
+            trackRepo.fetchTrack(id, true) { response ->
+                withContext(Dispatchers.Main) {
+                    completion(response.status.isSuccess())
+                }
+            }
+        }
+    }
+
+    fun uncacheTrack(id: Int) {
+        GlobalScope.launch(Dispatchers.IO) {
+            db.runInTransaction {
+                dao.deleteTrackById(id)
+            }
+        }
+    }
+
+    fun clearAllCache() {
+        GlobalScope.launch(Dispatchers.IO) {
+            db.runInTransaction {
+                dao.removeTracks()
             }
         }
     }

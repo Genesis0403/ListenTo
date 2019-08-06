@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <array name="tracks_array">
+        <item>Add to cache</item>
+        <item>Remove from cache</item>
+    </array>
+</resources>

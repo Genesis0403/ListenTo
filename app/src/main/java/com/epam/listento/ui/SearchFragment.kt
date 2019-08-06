@@ -56,9 +56,9 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         binder?.let {
             val current = sessionManager.currentPlaying.value
             val state = sessionManager.isPlaying.value
-            if (state != PlaybackState.STOPPED
-                && state != PlaybackState.PAUSED
-                && current?.id == track.id.toString()
+            if (state != PlaybackState.STOPPED &&
+                state != PlaybackState.PAUSED &&
+                current?.id == track.id.toString()
             ) {
                 findNavController().navigate(R.id.playerActivity)
             } else {
@@ -70,12 +70,14 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         }
     }
 
-    override fun onAttach(context: Context) {
-        super.onAttach(context)
-        App.component.inject(this)
+    override fun onLongClick(track: Track) {
+        val name = track.artist?.name ?: return
+        val action = TrackDialogDirections.actionTrackDialog(track.id, track.title, name)
+        findNavController().navigate(action)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        App.component.inject(this)
         super.onCreate(savedInstanceState)
         mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
     }

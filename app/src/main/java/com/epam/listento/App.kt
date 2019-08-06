@@ -19,5 +19,5 @@ class App : Application() {
             .application(this)
             .build()
     }
-    //TODO stop service if not stopped
+    // TODO stop service if not stopped
 }

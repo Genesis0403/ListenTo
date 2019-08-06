@@ -16,4 +16,7 @@
     <string name="dbName">ListenToDatabase</string>
     <string name="cache">Cache</string>
     <string name="default_caching_key">default_caching</string>
+    <string name="already_in_cache">Track is already in cache</string>
+    <string name="success_caching">Successfully cached</string>
+    <string name="failde_caching">Failed to cache</string>
 </resources>

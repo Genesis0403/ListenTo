@@ -48,7 +48,8 @@ class MediaSessionCallback(
                 player.playWhenReady = true
             } else {
                 currentPlaying = metadata
-                downloadInteractor.downloadTrack(track) { result ->
+                val isCaching = downloadInteractor.isCaching()
+                downloadInteractor.downloadTrack(track, isCaching) { result ->
                     if (result.status.isSuccess() && result.body != null) {
                         prepareToPlay(result.body)
                         player.playWhenReady = true
@@ -94,7 +95,8 @@ class MediaSessionCallback(
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
             currentPlaying = metadata
 
-            downloadInteractor.downloadTrack(track) { result ->
+            val isCaching = downloadInteractor.isCaching()
+            downloadInteractor.downloadTrack(track, isCaching) { result ->
                 if (result.status.isSuccess() && result.body != null) {
                     prepareToPlay(result.body)
                     player.playWhenReady = true
@@ -117,7 +119,8 @@ class MediaSessionCallback(
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
             currentPlaying = metadata
 
-            downloadInteractor.downloadTrack(track) { result ->
+            val isCaching = downloadInteractor.isCaching()
+            downloadInteractor.downloadTrack(track, isCaching) { result ->
                 if (result.status.isSuccess() && result.body != null) {
                     prepareToPlay(result.body)
                     player.playWhenReady = true

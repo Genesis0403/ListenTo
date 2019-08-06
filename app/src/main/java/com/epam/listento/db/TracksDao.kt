@@ -21,4 +21,7 @@ interface TracksDao {
 
     @Query("DELETE FROM DomainTrack WHERE id = :id")
     fun deleteTrackById(id: Int)
+
+    @Query("DELETE FROM DomainTrack")
+    fun removeTracks()
 }

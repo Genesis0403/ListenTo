@@ -37,10 +37,9 @@ class DownloadInteractor @Inject constructor(
 
     fun downloadTrack(
         track: MediaMetadataCompat,
+        isCaching: Boolean,
         completion: (ApiResponse<Uri>) -> Unit
     ) {
-        val prefs = PreferenceManager.getDefaultSharedPreferences(contextProvider.context())
-        val isCaching = prefs.getBoolean(contextProvider.getString(R.string.default_caching_key), false)
         val trackName = "${track.artist}-${track.title}.mp3"
         if (trackRepo.checkTrackExistence(trackName)) {
             val uri = trackRepo.fetchTrackUri(trackName)
@@ -59,8 +58,37 @@ class DownloadInteractor @Inject constructor(
         }
     }
 
+    fun downloadTrack(
+        id: Int,
+        title: String,
+        artist: String,
+        completion: (ApiResponse<Uri>) -> Unit
+    ) {
+        val trackName = "$artist-$title.mp3"
+        if (trackRepo.checkTrackExistence(trackName)) {
+            val uri = trackRepo.fetchTrackUri(trackName)
+            cacheInteractor.cacheTrack(id) {}
+            completion(ApiResponse.success(uri))
+        } else {
+            fetchTrack(id, true) { url ->
+                if (url.status.isSuccess() && url.body != null) {
+                    downloadFile(trackName, url.body) { result ->
+                        completion(result)
+                    }
+                } else {
+                    completion(ApiResponse.error(url.error!!))
+                }
+            }
+        }
+    }
+
+    fun isCaching(): Boolean {
+        val prefs = PreferenceManager.getDefaultSharedPreferences(contextProvider.context())
+        return prefs.getBoolean(contextProvider.getString(R.string.default_caching_key), false)
+    }
+
     private fun cacheTrack(track: MediaMetadataCompat, isCaching: Boolean) {
-        cacheInteractor.isTrackInCache(track) { isInCache ->
+        cacheInteractor.isTrackInCache(track.id.toInt()) { isInCache ->
             if (isCaching && !isInCache) {
                 fetchTrack(track.id.toInt(), isCaching) {}
             }
@@ -89,7 +117,7 @@ class DownloadInteractor @Inject constructor(
         }
     }
 
-    private fun downloadFile(
+    fun downloadFile(
         trackName: String,
         url: String,
         completion: (ApiResponse<Uri>) -> Unit
@@ -132,6 +160,6 @@ class DownloadInteractor @Inject constructor(
             .fallback(R.drawable.no_photo_24dp)
             .error(R.drawable.no_photo_24dp)
             .submit(WIDTH, HEIGHT)
-            .get() //TODO add connectivity manager and load drawable instead image
+            .get() // TODO add connectivity manager and load drawable instead image
     }
 }
