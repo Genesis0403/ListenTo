@@ -1,7 +1,11 @@
 package com.epam.listento.ui.viewmodels
 
 import android.widget.Toast
-import androidx.lifecycle.*
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import androidx.preference.PreferenceManager
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
@@ -11,7 +15,10 @@ import com.epam.listento.model.CacheInteractor
 import com.epam.listento.model.DownloadInteractor
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
-import com.epam.listento.model.player.PlaybackState.*
+import com.epam.listento.model.player.PlaybackState.PAUSED
+import com.epam.listento.model.player.PlaybackState.PLAYING
+import com.epam.listento.model.player.PlaybackState.STOPPED
+import com.epam.listento.model.player.PlaybackState.UNKNOWN
 import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.repository.global.TracksRepository
@@ -43,12 +50,13 @@ class MainViewModel @Inject constructor(
     private val sp = PreferenceManager.getDefaultSharedPreferences(contextProvider.context())
     val nightMode = ThemeLiveData(contextProvider.context(), sp)
 
-    val cachedTracks: LiveData<List<Track>> = Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
-        val tracks = domain.mapNotNull { mappers.mapTrack(it) }.toList()
-        MutableLiveData<List<Track>>().apply {
-            value = tracks
+    val cachedTracks: LiveData<List<Track>> =
+        Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
+            val tracks = domain.mapNotNull { mappers.mapTrack(it) }.toList()
+            MutableLiveData<List<Track>>().apply {
+                value = tracks
+            }
         }
-    }
 
     fun fetchTracks(text: String) {
         job?.cancel()
@@ -56,7 +64,8 @@ class MainViewModel @Inject constructor(
             tracksRepo.fetchTracks(text) { response ->
                 if (response.isSuccessful) {
                     val items =
-                        response.body()?.asSequence()?.map { mapTrack(it) }?.filterNotNull()?.toList()
+                        response.body()?.asSequence()?.map { mapTrack(it) }?.filterNotNull()
+                            ?.toList()
                     _tracks.postValue(ApiResponse.success(items))
                 } else {
                     _tracks.postValue(ApiResponse.error(response.message()))
