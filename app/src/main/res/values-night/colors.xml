@@ -1,8 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="colorPrimary">#8674ea</color>
-    <color name="colorPrimaryDark">#6a5cb8</color>
-    <color name="colorAccent">#D81B60</color>
-    <color name="whiteColor">#ffffff</color>
+    <color name="colorPrimary">#212121</color>
+    <color name="colorPrimaryDark">#000000</color>
+    <color name="colorAccent">@color/colorOnPrimary</color>
     <color name="darkColor">#000000</color>
+    <color name="colorOnPrimary">#BB86FC</color>
+    <color name="searchIconTint">@color/colorOnPrimary</color>
+
+    <color name="colorOnInactive">#CCCCCC</color>
+    <color name="colorOnActive">#BB86FC</color>
+
+    <!--<color name="colorPrimaryVariant">#3700b3</color>
+    <color name="colorSecondary">@color/textColorPrimary</color>
+    <color name="colorSecondaryVariant">@color/textColorPrimary</color>
+    <color name="colorBackground">#121212</color>
+    <color name="colorSurface">#121212</color>
+    <color name="colorOnPrimary">#000000</color>
+    <color name="colorOnSecondary">#000000</color> -->
 </resources>

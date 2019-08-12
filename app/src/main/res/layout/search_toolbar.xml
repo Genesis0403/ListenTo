@@ -9,14 +9,12 @@
                 android:id="@+id/searchToolBar"
                 android:layout_width="match_parent"
                 android:layout_height="?android:attr/actionBarSize"
-                style="@style/ToolBarStyle"
         >
             <androidx.appcompat.widget.SearchView
                     android:id="@+id/actionSearchView"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     app:iconifiedByDefault="false"
-                    style="@style/SearchViewStyle"
             />
         </androidx.appcompat.widget.Toolbar>
 

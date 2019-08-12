@@ -9,5 +9,6 @@
             android:icon="@drawable/action_search_item_24dp"
             app:actionViewClass="androidx.appcompat.widget.SearchView"
             app:showAsAction="always|collapseActionView"
+            app:iconTint="@color/searchIconTint"
     />
 </menu>

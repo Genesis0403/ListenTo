@@ -19,4 +19,15 @@
 
     </PreferenceCategory>
 
+    <PreferenceCategory
+            app:key="themes"
+            app:title="Themes"
+    >
+        <SwitchPreferenceCompat
+            app:key="night_mode"
+            app:title="Night mode"
+        />
+
+    </PreferenceCategory>
+
 </androidx.preference.PreferenceScreen>

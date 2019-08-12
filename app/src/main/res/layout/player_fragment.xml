@@ -30,8 +30,8 @@
             android:layout_marginEnd="8dp"
             app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="8dp"
-            android:thumbTint="@color/colorPrimary"
-            android:progressTint="@color/colorPrimaryDark"
+            android:thumbTint="@color/colorOnActive"
+            android:progressTint="@color/colorOnActive"
             app:layout_constraintHorizontal_bias="0.494"
             android:layout_marginTop="8dp"
             app:layout_constraintTop_toBottomOf="@+id/albumCover"/>
@@ -72,7 +72,8 @@
             android:layout_marginTop="24dp"
             app:layout_constraintTop_toBottomOf="@+id/artistName" app:layout_constraintStart_toStartOf="@+id/albumCover"
             android:layout_marginBottom="8dp" app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintVertical_bias="0.0"/>
+            app:layout_constraintVertical_bias="0.0"
+    />
     <CheckBox
             android:layout_width="50dp"
             android:layout_height="50dp"
@@ -81,16 +82,21 @@
             android:focusable="true"
             android:button="@null"
             android:id="@+id/playButton"
-            app:layout_constraintStart_toStartOf="@+id/artistName" app:layout_constraintEnd_toEndOf="@+id/artistName"
-            android:layout_marginTop="24dp" app:layout_constraintTop_toBottomOf="@+id/artistName"
-            app:layout_constraintHorizontal_bias="0.495" android:layout_marginBottom="8dp"
-            app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintVertical_bias="0.0"/>
+            app:layout_constraintStart_toStartOf="@+id/artistName"
+            app:layout_constraintEnd_toEndOf="@+id/artistName"
+            android:layout_marginTop="24dp"
+            app:layout_constraintTop_toBottomOf="@+id/artistName"
+            app:layout_constraintHorizontal_bias="0.495"
+            android:layout_marginBottom="8dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintVertical_bias="0.0"/>
     <ImageButton
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:background="@drawable/ic_fast_forward_black_24dp"
             android:id="@+id/forwardButton"
-            android:layout_marginTop="24dp" app:layout_constraintTop_toBottomOf="@+id/artistName"
+            android:layout_marginTop="24dp"
+            app:layout_constraintTop_toBottomOf="@+id/artistName"
             app:layout_constraintEnd_toEndOf="@+id/albumCover"
             android:layout_marginBottom="8dp" app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintVertical_bias="0.0"/>
@@ -119,7 +125,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:id="@+id/backButton"
-            android:background="@color/whiteColor"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintStart_toStartOf="parent"

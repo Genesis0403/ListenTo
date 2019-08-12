@@ -3,8 +3,9 @@ package com.epam.listento.repository
 import android.support.v4.media.MediaMetadataCompat
 import com.epam.listento.model.player.utils.id
 import com.epam.listento.repository.global.MusicRepository
+import javax.inject.Inject
 
-class MusicRepositoryImpl : MusicRepository {
+class MusicRepositoryImpl @Inject constructor() : MusicRepository {
 
     private val tracks = mutableListOf<MediaMetadataCompat>()
     private var currentIndex = 0

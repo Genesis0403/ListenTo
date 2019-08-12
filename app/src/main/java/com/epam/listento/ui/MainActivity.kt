@@ -2,6 +2,8 @@ package com.epam.listento.ui
 
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.findNavController
@@ -35,10 +37,18 @@ class MainActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
         App.component.inject(this)
-        setContentView(R.layout.activity_main)
         mainViewModel = ViewModelProviders.of(this, factory)[MainViewModel::class.java]
+
+        super.onCreate(savedInstanceState)
+        setContentView(R.layout.activity_main)
+
+        mainViewModel.nightMode.observe(this, Observer<Int> { uiMode ->
+            if (uiMode != AppCompatDelegate.getDefaultNightMode()) {
+                AppCompatDelegate.setDefaultNightMode(uiMode)
+                recreate()
+            }
+        })
 
         appToolBar.setupWithNavController(navController, appBarConfiguration)
         navigationBar.setupWithNavController(navController)

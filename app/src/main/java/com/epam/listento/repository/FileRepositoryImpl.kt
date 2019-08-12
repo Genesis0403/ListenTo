@@ -3,6 +3,7 @@ package com.epam.listento.repository
 import android.net.Uri
 import android.os.Environment
 import android.util.Log
+import com.epam.listento.R
 import com.epam.listento.api.YandexService
 import com.epam.listento.repository.global.FileRepository
 import com.epam.listento.utils.ContextProvider
@@ -13,7 +14,6 @@ import java.io.FileOutputStream
 import javax.inject.Inject
 
 private const val TAG = "FILE_REPOSITORY"
-private const val LOCAL_DIRECTORY = "ListenToMusic"
 
 class FileRepositoryImpl @Inject constructor(
     private val service: YandexService,
@@ -64,9 +64,10 @@ class FileRepositoryImpl @Inject constructor(
 
     private fun createFile(trackName: String): File {
         val context = contextProvider.context()
+        val localDir = context.getString(R.string.app_local_dir)
         val dir = File(
             context.getExternalFilesDir(Environment.DIRECTORY_MUSIC),
-            LOCAL_DIRECTORY
+            localDir
         )
         if (!dir.exists()) {
             dir.mkdirs()

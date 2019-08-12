@@ -1,6 +1,8 @@
 package com.epam.listento
 
 import android.app.Application
+import androidx.appcompat.app.AppCompatDelegate
+import androidx.preference.PreferenceManager
 import com.epam.listento.di.AppComponent
 import com.epam.listento.di.DaggerAppComponent
 
@@ -18,6 +20,16 @@ class App : Application() {
         _component = DaggerAppComponent.builder()
             .application(this)
             .build()
+
+        setUiMode()
+    }
+
+    private fun setUiMode() {
+        val sp = PreferenceManager.getDefaultSharedPreferences(this)
+        val isNightMode = sp.getBoolean(getString(R.string.night_mode_key), false)
+        if (isNightMode) {
+            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+        }
     }
     // TODO stop service if not stopped
 }

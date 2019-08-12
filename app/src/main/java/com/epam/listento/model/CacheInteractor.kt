@@ -1,12 +1,16 @@
 package com.epam.listento.model
 
+import com.epam.listento.R
 import com.epam.listento.db.AppDatabase
 import com.epam.listento.db.TracksDao
 import com.epam.listento.repository.global.TrackRepository
+import com.epam.listento.utils.ContextProvider
 import kotlinx.coroutines.*
+import java.io.File
 import javax.inject.Inject
 
 class CacheInteractor @Inject constructor(
+    private val contextProvider: ContextProvider,
     private val trackRepo: TrackRepository,
     private val db: AppDatabase,
     private val dao: TracksDao
@@ -52,6 +56,16 @@ class CacheInteractor @Inject constructor(
         GlobalScope.launch(Dispatchers.IO) {
             db.runInTransaction {
                 dao.removeTracks()
+                clearFolder()
+            }
+        }
+    }
+
+    private fun clearFolder() {
+        val context = contextProvider.context()
+        File(context.getString(R.string.app_local_dir)).run {
+            if (exists()) {
+                deleteRecursively()
             }
         }
     }

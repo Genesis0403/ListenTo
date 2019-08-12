@@ -9,15 +9,23 @@
         tools:context=".ui.MainActivity"
 >
 
-    <androidx.appcompat.widget.Toolbar
+    <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/appBarLayout"
             android:layout_width="match_parent"
-            android:layout_height="?android:attr/actionBarSize"
-            android:id="@+id/appToolBar"
-            app:layout_constraintTop_toTopOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent"
+            android:layout_height="wrap_content"
             app:layout_constraintHorizontal_bias="0.0"
-    />
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent"
+    >
+        <androidx.appcompat.widget.Toolbar
+                android:layout_width="match_parent"
+                android:layout_height="?android:attr/actionBarSize"
+                android:id="@+id/appToolBar"
+                style="@style/AppTheme.ToolBar"
+        />
+    </com.google.android.material.appbar.AppBarLayout>
+
 
     <fragment
             android:name="androidx.navigation.fragment.NavHostFragment"
@@ -27,7 +35,7 @@
             android:id="@+id/navHostFragment"
             app:layout_constraintBottom_toTopOf="@+id/navigationBar"
             app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/appToolBar"
+            app:layout_constraintTop_toBottomOf="@+id/appBarLayout"
             app:layout_constraintEnd_toEndOf="parent"/>
 
     <com.google.android.material.bottomnavigation.BottomNavigationView
@@ -35,7 +43,6 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_gravity="bottom"
-            android:background="@color/whiteColor"
             app:menu="@menu/bottom_navigation_view_menu"
             app:itemIconTint="@color/navigation_bar_selector"
             app:labelVisibilityMode="unlabeled"

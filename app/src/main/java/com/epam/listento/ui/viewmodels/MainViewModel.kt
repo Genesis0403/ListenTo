@@ -2,6 +2,7 @@ package com.epam.listento.ui.viewmodels
 
 import android.widget.Toast
 import androidx.lifecycle.*
+import androidx.preference.PreferenceManager
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.mapTrack
@@ -14,6 +15,7 @@ import com.epam.listento.model.player.PlaybackState.*
 import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.repository.global.TracksRepository
+import com.epam.listento.ui.nightmode.ThemeLiveData
 import com.epam.listento.utils.ContextProvider
 import com.epam.listento.utils.PlatformMappers
 import kotlinx.coroutines.Dispatchers
@@ -37,6 +39,9 @@ class MainViewModel @Inject constructor(
 
     private val _tracks: MutableLiveData<ApiResponse<List<Track>>> = MutableLiveData()
     val tracks: LiveData<ApiResponse<List<Track>>> get() = _tracks
+
+    private val sp = PreferenceManager.getDefaultSharedPreferences(contextProvider.context())
+    val nightMode = ThemeLiveData(contextProvider.context(), sp)
 
     val cachedTracks: LiveData<List<Track>> = Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
         val tracks = domain.mapNotNull { mappers.mapTrack(it) }.toList()

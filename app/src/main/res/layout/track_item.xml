@@ -6,10 +6,10 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:padding="2dp"
-        android:background="#f2f2f2"
 >
 
     <androidx.cardview.widget.CardView
+            android:elevation="100dp"
             android:id="@+id/cardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
