@@ -18,7 +18,7 @@
     <string name="default_caching_key">default_caching</string>
     <string name="already_in_cache">Track is already in cache</string>
     <string name="success_caching">Successfully cached</string>
-    <string name="failde_caching">Failed to cache</string>
+    <string name="failed_caching">Failed to cache</string>
     <string name="night_mode_key">night_mode</string>
     <string name="app_local_dir">ListenToMusic</string>
 </resources>

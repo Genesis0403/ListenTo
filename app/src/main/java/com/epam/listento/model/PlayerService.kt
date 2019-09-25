@@ -24,7 +24,10 @@ import com.epam.listento.model.player.NotificationBuilder
 import com.epam.listento.model.player.STOP_ACTION
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.ui.MainActivity
-import com.google.android.exoplayer2.*
+import com.google.android.exoplayer2.C
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.audio.AudioAttributes
 import javax.inject.Inject
 
@@ -143,7 +146,10 @@ class PlayerService : Service() {
                     applicationContext,
                     0,
                     Intent(
-                        Intent.ACTION_MEDIA_BUTTON, null, applicationContext, MediaButtonReceiver::class.java
+                        Intent.ACTION_MEDIA_BUTTON,
+                        null,
+                        applicationContext,
+                        MediaButtonReceiver::class.java
                     ).also {
                         it.flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     },
@@ -193,7 +199,10 @@ class PlayerService : Service() {
             PlaybackStateCompat.STATE_PLAYING,
             PlaybackStateCompat.STATE_BUFFERING -> {
 
-                registerReceiver(becomeNoisyReceiver, IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY))
+                registerReceiver(
+                    becomeNoisyReceiver,
+                    IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+                )
 
                 if (notification != null) {
                     notificationManager.notify(NOTIFICATION_ID, notification)
