@@ -9,7 +9,6 @@ import javax.inject.Singleton
 
 @Module(
     includes = [
-        ViewModelModule::class,
         RepositoryModule::class,
         PlayerModule::class
     ]

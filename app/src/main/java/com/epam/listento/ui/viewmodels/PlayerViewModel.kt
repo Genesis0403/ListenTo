@@ -1,12 +1,14 @@
 package com.epam.listento.ui.viewmodels
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import java.util.*
+import java.util.Timer
 import javax.inject.Inject
+import javax.inject.Provider
 import kotlin.concurrent.schedule
 
 private const val SECOND: Long = 1000
@@ -32,5 +34,15 @@ class PlayerViewModel @Inject constructor() : ViewModel() {
         job?.cancel()
         timer?.cancel()
         timer = null
+    }
+
+    class Factory @Inject constructor(
+        private val provider: Provider<PlayerViewModel>
+    ) : ViewModelProvider.Factory {
+
+        @Suppress("UNCKECKED_CAST")
+        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
+            return provider.get() as T
+        }
     }
 }

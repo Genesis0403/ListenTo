@@ -65,7 +65,7 @@ class CacheScreenViewModel @Inject constructor(
     }
 
     fun handleLongItemClick(track: Track) {
-        //TODO create playlist on long click and add dots menu for cache actions
+        // TODO create playlist on long click and add dots menu for cache actions
         val artist = track.artist?.name ?: ""
         _navigationAction.value = NavigationAction.NeedCacheDialog(track.id, track.title, artist)
     }
@@ -93,7 +93,7 @@ class CacheScreenViewModel @Inject constructor(
                 val resId = if (track.id == trackId) newRes else Track.NO_RES
                 track.copy(res = resId)
             }
-            cachedTracks as MutableLiveData //TODO refactor
+            cachedTracks as MutableLiveData // TODO refactor
             cachedTracks.postValue(result)
         }
     }

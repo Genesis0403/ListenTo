@@ -4,6 +4,7 @@ import android.app.Dialog
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.navArgs
@@ -20,15 +21,16 @@ class TrackDialog : DialogFragment() {
     }
 
     @Inject
-    lateinit var factory: ViewModelProvider.Factory
-    lateinit var mainViewModel: MainViewModel
+    lateinit var factory: MainViewModel.Factory
+    private val mainViewModel: MainViewModel by activityViewModels {
+        factory
+    }
 
     private val args: TrackDialogArgs by navArgs()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         App.component.inject(this)
         super.onCreate(savedInstanceState)
-        mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
     }
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {

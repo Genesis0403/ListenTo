@@ -2,8 +2,7 @@ package com.epam.listento.ui
 
 import android.os.Bundle
 import androidx.appcompat.widget.Toolbar
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProviders
+import androidx.fragment.app.activityViewModels
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.epam.listento.App
@@ -16,18 +15,18 @@ private const val CLEAR_CACHE = "clear_cache"
 class PreferencesFragment : PreferenceFragmentCompat() {
 
     @Inject
-    lateinit var factory: ViewModelProvider.Factory
-    lateinit var mainViewModel: MainViewModel
+    lateinit var factory: MainViewModel.Factory
+    private val mainViewModel: MainViewModel by activityViewModels {
+        factory
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        App.component.inject(this)
         super.onCreate(savedInstanceState)
+        App.component.inject(this)
 
         activity?.findViewById<Toolbar>(R.id.appToolBar)?.apply {
             menu.clear()
         }
-
-        mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
     }
 
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {

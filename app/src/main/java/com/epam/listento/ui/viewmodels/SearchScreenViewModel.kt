@@ -111,7 +111,6 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
-
     sealed class NavigationAction {
         object PlayerActivity : NavigationAction()
         data class ShouldChangePlaylist(val track: Track) : NavigationAction()

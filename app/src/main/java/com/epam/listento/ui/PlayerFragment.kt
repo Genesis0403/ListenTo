@@ -16,8 +16,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.fragment.app.Fragment
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProviders
+import androidx.fragment.app.viewModels
 import com.bumptech.glide.Glide
 import com.bumptech.glide.load.resource.bitmap.CenterCrop
 import com.bumptech.glide.load.resource.bitmap.RoundedCorners
@@ -27,7 +26,16 @@ import com.epam.listento.R
 import com.epam.listento.model.MsMapper
 import com.epam.listento.model.PlayerService
 import com.epam.listento.ui.viewmodels.PlayerViewModel
-import kotlinx.android.synthetic.main.player_fragment.*
+import kotlinx.android.synthetic.main.player_fragment.albumCover
+import kotlinx.android.synthetic.main.player_fragment.artistName
+import kotlinx.android.synthetic.main.player_fragment.backButton
+import kotlinx.android.synthetic.main.player_fragment.forwardButton
+import kotlinx.android.synthetic.main.player_fragment.negativeTiming
+import kotlinx.android.synthetic.main.player_fragment.playButton
+import kotlinx.android.synthetic.main.player_fragment.positiveTiming
+import kotlinx.android.synthetic.main.player_fragment.rewindButton
+import kotlinx.android.synthetic.main.player_fragment.trackTimeProgress
+import kotlinx.android.synthetic.main.player_fragment.trackTitle
 import javax.inject.Inject
 
 class PlayerFragment : Fragment() {
@@ -42,8 +50,10 @@ class PlayerFragment : Fragment() {
     }
 
     @Inject
-    lateinit var factory: ViewModelProvider.Factory
-    private lateinit var playerViewModel: PlayerViewModel
+    lateinit var factory: PlayerViewModel.Factory
+    private val playerViewModel: PlayerViewModel by viewModels {
+        factory
+    }
 
     private var binder: PlayerService.PlayerBinder? = null
     private var controller: MediaControllerCompat? = null
@@ -51,11 +61,13 @@ class PlayerFragment : Fragment() {
     private var isUserTouching = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        Log.d(TAG, "CREATED")
-        App.component.inject(this)
         super.onCreate(savedInstanceState)
-        playerViewModel = ViewModelProviders.of(requireActivity(), factory)[PlayerViewModel::class.java]
-        activity?.bindService(Intent(activity, PlayerService::class.java), connection, Context.BIND_AUTO_CREATE)
+        App.component.inject(this)
+        activity?.bindService(
+            Intent(activity, PlayerService::class.java),
+            connection,
+            Context.BIND_AUTO_CREATE
+        )
     }
 
     override fun onCreateView(
