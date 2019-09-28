@@ -8,13 +8,6 @@ import com.epam.listento.di.DaggerAppComponent
 
 class App : Application() {
 
-    companion object {
-        private const val TAG = "APPLICATION"
-
-        private lateinit var _component: AppComponent
-        val component: AppComponent get() = _component
-    }
-
     override fun onCreate() {
         super.onCreate()
         _component = DaggerAppComponent.builder()
@@ -24,6 +17,11 @@ class App : Application() {
         setUiMode()
     }
 
+    override fun onTerminate() {
+        super.onTerminate()
+        // TODO stop service if not stopped
+    }
+
     private fun setUiMode() {
         val sp = PreferenceManager.getDefaultSharedPreferences(this)
         val isNightMode = sp.getBoolean(getString(R.string.night_mode_key), false)
@@ -31,5 +29,9 @@ class App : Application() {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
         }
     }
-    // TODO stop service if not stopped
+
+    companion object {
+        private lateinit var _component: AppComponent
+        val component: AppComponent get() = _component
+    }
 }

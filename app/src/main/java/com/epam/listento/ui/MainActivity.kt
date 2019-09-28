@@ -2,28 +2,29 @@ package com.epam.listento.ui
 
 import android.content.SharedPreferences
 import android.os.Bundle
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Observer
 import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.setupWithNavController
+import androidx.preference.PreferenceManager
 import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.ui.viewmodels.MainViewModel
-import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.activity_main.appToolBar
+import kotlinx.android.synthetic.main.activity_main.navigationBar
 import javax.inject.Inject
 
-private const val TAG = "MAIN_ACTIVITY"
-
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
     @Inject
     lateinit var factory: ViewModelProvider.Factory
-
-    private lateinit var mainViewModel: MainViewModel
+    private val mainViewModel: MainViewModel by viewModels {
+        factory
+    }
 
     private val navController by lazy { findNavController(R.id.navHostFragment) }
 
@@ -37,12 +38,18 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
-    override fun onCreate(savedInstanceState: Bundle?) {
-        App.component.inject(this)
-        mainViewModel = ViewModelProviders.of(this, factory)[MainViewModel::class.java]
+    private val sp: SharedPreferences by lazy {
+        PreferenceManager.getDefaultSharedPreferences(this)
+    }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        setContentView(R.layout.activity_main)
+        App.component.inject(this)
+
+        sp.registerOnSharedPreferenceChangeListener(sharedPreferencesListener)
+
+        appToolBar.setupWithNavController(navController, appBarConfiguration)
+        navigationBar.setupWithNavController(navController)
 
         mainViewModel.nightMode.observe(this, Observer<Int> { uiMode ->
             if (uiMode != AppCompatDelegate.getDefaultNightMode()) {
@@ -50,13 +57,16 @@ class MainActivity : AppCompatActivity() {
                 recreate()
             }
         })
-
-        appToolBar.setupWithNavController(navController, appBarConfiguration)
-        navigationBar.setupWithNavController(navController)
     }
 
-    private val sharedPreferencesListener  =
+    override fun onDestroy() {
+        super.onDestroy()
+        sp.unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)
+    }
+
+    private val sharedPreferencesListener =
         SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
-            //TODO move logic of ui mode change into viewmodel and remove ThemeLivedata
+            val isNightMode = sp.getBoolean(key, false)
+            mainViewModel.handleThemeChange(isNightMode, key)
         }
 }

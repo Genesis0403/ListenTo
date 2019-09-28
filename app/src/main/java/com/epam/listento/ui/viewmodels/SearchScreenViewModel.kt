@@ -13,7 +13,7 @@ import com.epam.listento.model.Track
 import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.repository.global.TracksRepository
-import com.epam.listento.ui.PlaybackState
+import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.launch
 import javax.inject.Inject

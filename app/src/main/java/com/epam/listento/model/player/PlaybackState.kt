@@ -1,5 +1,8 @@
 package com.epam.listento.model.player
 
-enum class PlaybackState {
-    PLAYING, PAUSED, STOPPED, UNKNOWN
+sealed class PlaybackState {
+    object Playing : PlaybackState()
+    object Paused : PlaybackState()
+    object Stopped : PlaybackState()
+    object None : PlaybackState()
 }
