@@ -3,55 +3,53 @@ package com.epam.listento.ui.viewmodels
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Transformations
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.epam.listento.R
-import com.epam.listento.api.ApiResponse
-import com.epam.listento.api.mapTrack
+import com.epam.listento.db.TracksDao
 import com.epam.listento.model.Track
 import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.MusicRepository
-import com.epam.listento.repository.global.TracksRepository
 import com.epam.listento.ui.PlaybackState
+import com.epam.listento.utils.PlatformMappers
 import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Provider
 
-class SearchScreenViewModel @Inject constructor(
-    private val tracksRepo: TracksRepository,
-    private val musicRepo: MusicRepository
+class CacheScreenViewModel @Inject constructor(
+    private val musicRepo: MusicRepository,
+    dao: TracksDao,
+    mappers: PlatformMappers
 ) : ViewModel() {
 
-    private val _tracks: MutableLiveData<ApiResponse<List<Track>>> = MutableLiveData()
-    val tracks: LiveData<ApiResponse<List<Track>>> get() = _tracks
-
-    private val _currentPlaying: MutableLiveData<Track> = MutableLiveData()
+    private val _currentPlaying = MutableLiveData<Track>()
     val currentPlaying: LiveData<Track> get() = _currentPlaying
 
-    private val _playbackState: MutableLiveData<PlaybackState> = MutableLiveData()
+    private val _playbackState = MutableLiveData<PlaybackState>()
     val playbackState: LiveData<PlaybackState> get() = _playbackState
 
     private val _navigationAction: MutableLiveData<NavigationAction> = SingleLiveEvent()
     val navigationActions: LiveData<NavigationAction> get() = _navigationAction
 
-    fun fetchTracks(query: String) {
-        viewModelScope.launch {
-            tracksRepo.fetchTracks(query) { response ->
-                if (response.isSuccessful) {
-                    val items = response.body()
-                        ?.asSequence()
-                        ?.map { mapTrack(it) }
-                        ?.filterNotNull()
-                        ?.toList()
-                    _tracks.postValue(ApiResponse.success(items))
+    val cachedTracks: LiveData<List<Track>> =
+        Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
+            MutableLiveData<List<Track>>().apply {
+                value = if (domain.isNullOrEmpty()) {
+                    emptyList()
                 } else {
-                    _tracks.postValue(ApiResponse.error(response.message()))
+                    domain.mapNotNull {
+                        val track = mappers.mapTrack(it)
+                        if (track == currentPlaying.value) {
+                            track?.res = getPlaybackRes()
+                        }
+                        track
+                    }
                 }
             }
         }
-    }
 
     fun handleItemClick(track: Track) {
         val current = currentPlaying.value
@@ -67,22 +65,14 @@ class SearchScreenViewModel @Inject constructor(
     }
 
     fun handleLongItemClick(track: Track) {
+        //TODO create playlist on long click and add dots menu for cache actions
         val artist = track.artist?.name ?: ""
         _navigationAction.value = NavigationAction.NeedCacheDialog(track.id, track.title, artist)
     }
 
-    fun changePlaylistAndSetCurrent(track: Track) {
-        viewModelScope.launch {
-            tracks.value?.body?.map { it.toMetadata() }?.let { metadata ->
-                musicRepo.setSource(metadata)
-                musicRepo.setCurrent(track.toMetadata())
-            }
-        }
-    }
-
     fun handleMetadataChange(trackId: Int) {
         viewModelScope.launch {
-            _currentPlaying.value = _tracks.value?.body?.find { it.id == trackId } ?: return@launch
+            _currentPlaying.value = cachedTracks.value?.find { it.id == trackId } ?: return@launch
         }
     }
 
@@ -97,20 +87,33 @@ class SearchScreenViewModel @Inject constructor(
 
     fun handlePlayerStateChange(trackId: Int) {
         viewModelScope.launch {
-            val newRes = when (playbackState.value) {
-                PlaybackState.Playing -> R.drawable.exo_icon_pause
-                PlaybackState.Paused -> R.drawable.exo_icon_play
-                else -> Track.NO_RES
-            }
+            val newRes = getPlaybackRes()
 
-            val result = _tracks.value?.body?.map { track ->
+            val result = cachedTracks.value?.map { track ->
                 val resId = if (track.id == trackId) newRes else Track.NO_RES
                 track.copy(res = resId)
             }
-            _tracks.postValue(ApiResponse.success(result))
+            cachedTracks as MutableLiveData //TODO refactor
+            cachedTracks.postValue(result)
         }
     }
 
+    fun changePlaylistAndSetCurrent(track: Track) {
+        viewModelScope.launch {
+            cachedTracks.value?.map { it.toMetadata() }?.let { metadata ->
+                musicRepo.setSource(metadata)
+                musicRepo.setCurrent(track.toMetadata())
+            }
+        }
+    }
+
+    private fun getPlaybackRes(): Int {
+        return when (playbackState.value) {
+            PlaybackState.Playing -> R.drawable.exo_icon_pause
+            PlaybackState.Paused -> R.drawable.exo_icon_play
+            else -> Track.NO_RES
+        }
+    }
 
     sealed class NavigationAction {
         object PlayerActivity : NavigationAction()
@@ -123,7 +126,7 @@ class SearchScreenViewModel @Inject constructor(
     }
 
     class Factory @Inject constructor(
-        private val provider: Provider<SearchScreenViewModel>
+        private val provider: Provider<CacheScreenViewModel>
     ) : ViewModelProvider.Factory {
 
         @Suppress("UNCHECKED_CAST")

@@ -52,9 +52,12 @@ class MainViewModel @Inject constructor(
 
     val cachedTracks: LiveData<List<Track>> =
         Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
-            val tracks = domain.mapNotNull { mappers.mapTrack(it) }.toList()
             MutableLiveData<List<Track>>().apply {
-                value = tracks
+                value = if (domain.isNullOrEmpty()) {
+                    emptyList()
+                } else {
+                    domain.mapNotNull { mappers.mapTrack(it) }
+                }
             }
         }
 
@@ -80,7 +83,7 @@ class MainViewModel @Inject constructor(
             val message = if (response.status.isSuccess()) {
                 context.getString(R.string.success_caching)
             } else {
-                context.getString(R.string.failde_caching)
+                context.getString(R.string.failed_caching)
             }
             Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
@@ -138,8 +141,7 @@ class MainViewModel @Inject constructor(
                 UNKNOWN -> Track.NO_RES
             }
 
-            tracks as MutableLiveData
-            val result = tracks.value?.body?.map { track ->
+            val result = _tracks.value?.body?.map { track ->
                 val resId = if (track.id == id) newRes else Track.NO_RES
                 track.copy(res = resId)
             }

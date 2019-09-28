@@ -8,73 +8,56 @@ import android.os.Bundle
 import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
+import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.Toolbar
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
-import com.epam.listento.model.player.MediaSessionManager
-import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.player.utils.id
-import com.epam.listento.ui.viewmodels.MainViewModel
-import kotlinx.android.synthetic.main.tracks_fragment.*
+import com.epam.listento.ui.viewmodels.CacheScreenViewModel
+import kotlinx.android.synthetic.main.tracks_fragment.progressBar
+import kotlinx.android.synthetic.main.tracks_fragment.tracksRecyclerView
 import javax.inject.Inject
 
 class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
 
-    companion object {
-        private const val TAG = "PLAYLIST_FRAGMENT"
+    @Inject
+    lateinit var cacheFactory: CacheScreenViewModel.Factory
+    private val cacheViewModel: CacheScreenViewModel by activityViewModels {
+        cacheFactory
     }
 
-    @Inject
-    lateinit var factory: ViewModelProvider.Factory
-    private lateinit var mainViewModel: MainViewModel
+    private val navController by lazy { findNavController() }
 
     private val tracksAdapter = TracksAdapter(this)
-    lateinit var sessionManager: MediaSessionManager
 
     private var binder: PlayerService.PlayerBinder? = null
     private var controller: MediaControllerCompat? = null
 
     override fun onClick(track: Track) {
         binder?.let {
-            val current = sessionManager.currentPlaying.value
-            val state = sessionManager.isPlaying.value
-            if (state != PlaybackState.STOPPED &&
-                state != PlaybackState.PAUSED &&
-                current?.id == track.id.toString()
-            ) {
-                findNavController().navigate(R.id.playerActivity)
-            } else {
-                mainViewModel.cachedTracks.value?.let {
-                    mainViewModel.itemClick(track, it)
-                    controller?.transportControls?.play()
-                }
-            }
+            cacheViewModel.handleItemClick(track)
         }
     }
 
     override fun onLongClick(track: Track) {
-        val name = track.artist?.name ?: return
-        val action = TrackDialogDirections.actionTrackDialog(track.id, track.title, name)
-        findNavController().navigate(action)
+        cacheViewModel.handleLongItemClick(track)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        App.component.inject(this)
         super.onCreate(savedInstanceState)
-        mainViewModel = ViewModelProviders.of(requireActivity(), factory)[MainViewModel::class.java]
+        App.component.inject(this)
     }
 
     override fun onCreateView(
@@ -87,32 +70,28 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        val recycler = view.findViewById<RecyclerView>(R.id.tracksRecyclerView)
 
         activity?.findViewById<Toolbar>(R.id.appToolBar)?.apply {
             menu.clear()
             inflateMenu(R.menu.search_toolbar_menu)
         }
 
-        recycler.run {
+        tracksRecyclerView.run {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(context)
             adapter = tracksAdapter
         }
 
-        mainViewModel.cachedTracks.observe(this, Observer<List<Track>> { tracks ->
-            observeTrackList(tracks)
-        })
-    }
-
-    private fun observeTrackList(tracks: List<Track>) {
-        progress.visibility = if (!tracks.isNullOrEmpty()) View.GONE else View.VISIBLE
-        tracksAdapter.submitList(tracks)
+        initObservers()
     }
 
     override fun onStart() {
         super.onStart()
-        activity?.bindService(Intent(activity, PlayerService::class.java), connection, Context.BIND_AUTO_CREATE)
+        activity?.bindService(
+            Intent(activity, PlayerService::class.java),
+            connection,
+            Context.BIND_AUTO_CREATE
+        )
     }
 
     override fun onPause() {
@@ -127,6 +106,43 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
         Log.d(TAG, "DESTROYED")
     }
 
+    private fun initObservers() {
+        with(cacheViewModel) {
+
+            cachedTracks.observe(viewLifecycleOwner, Observer<List<Track>> {
+                val newData = it ?: emptyList()
+                tracksAdapter.submitList(newData)
+                progressBar.isVisible = false
+            })
+
+            currentPlaying.observe(viewLifecycleOwner, Observer<Track> {
+                cacheViewModel.handlePlayerStateChange(it.id)
+            })
+
+            navigationActions.observe(
+                viewLifecycleOwner,
+                Observer<CacheScreenViewModel.NavigationAction> { action ->
+                    when (action) {
+                        CacheScreenViewModel.NavigationAction.PlayerActivity -> {
+                            navController.navigate(R.id.playerActivity)
+                        }
+                        is CacheScreenViewModel.NavigationAction.ShouldChangePlaylist -> {
+                            cacheViewModel.changePlaylistAndSetCurrent(action.track)
+                            controller?.transportControls?.play()
+                        }
+                        is CacheScreenViewModel.NavigationAction.NeedCacheDialog -> {
+                            val actionId = TrackDialogDirections.actionTrackDialog(
+                                action.id,
+                                action.title,
+                                action.artist
+                            )
+                            navController.navigate(actionId)
+                        }
+                    }
+                })
+        }
+    }
+
     private val connection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
             controller = null
@@ -135,13 +151,12 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
             binder = service as PlayerService.PlayerBinder
-            binder?.let {
-                val token = it.getSessionToken() ?: return
-                val app = activity?.applicationContext ?: return
-                sessionManager = MediaSessionManager.getInstance(app, token)
+            binder?.let { binder ->
+                val token = binder.getSessionToken() ?: return
                 try {
-                    controller = MediaControllerCompat(requireActivity(), token)
-                    observeCurrentPlaying()
+                    controller = MediaControllerCompat(requireActivity(), token).also {
+                        it.registerCallback(callback)
+                    }
                 } catch (e: Exception) {
                     controller = null
                 }
@@ -149,11 +164,29 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
         }
     }
 
-    private fun observeCurrentPlaying() {
-        sessionManager.currentPlaying.observe(this, Observer<MediaMetadataCompat> { item ->
-            sessionManager.isPlaying.value?.let { isPlaying ->
-                mainViewModel.cachePlaybackChange(item.id.toInt(), isPlaying)
-            }
-        })
+    private val callback = object : MediaControllerCompat.Callback() {
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            super.onPlaybackStateChanged(state)
+            Log.d(TAG, "PLAYBACK")
+            cacheViewModel.handlePlaybackStateChange(
+                state?.state ?: PlaybackStateCompat.STATE_NONE
+            )
+        }
+
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            super.onMetadataChanged(metadata)
+            Log.d(TAG, "METADATA")
+            val id = metadata?.id?.toInt() ?: -1
+            cacheViewModel.handleMetadataChange(id)
+        }
+
+        override fun onSessionDestroyed() {
+            super.onSessionDestroyed()
+            controller?.unregisterCallback(this)
+        }
+    }
+
+    companion object {
+        private const val TAG = "PlaylistFragment"
     }
 }

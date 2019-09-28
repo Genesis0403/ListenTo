@@ -1,5 +1,6 @@
 package com.epam.listento.ui
 
+import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -53,4 +54,9 @@ class MainActivity : AppCompatActivity() {
         appToolBar.setupWithNavController(navController, appBarConfiguration)
         navigationBar.setupWithNavController(navController)
     }
+
+    private val sharedPreferencesListener  =
+        SharedPreferences.OnSharedPreferenceChangeListener { sp, key ->
+            //TODO move logic of ui mode change into viewmodel and remove ThemeLivedata
+        }
 }
