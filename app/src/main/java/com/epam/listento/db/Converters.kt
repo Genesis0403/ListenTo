@@ -4,7 +4,7 @@ import androidx.room.TypeConverter
 import com.epam.listento.domain.DomainAlbum
 import com.epam.listento.domain.DomainArtist
 import com.google.gson.Gson
-import java.util.*
+import java.util.Date
 
 class Converters {
 

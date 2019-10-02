@@ -1,22 +1,20 @@
 <?xml version="1.0" encoding="utf-8"?>
-<FrameLayout
-        xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
-        android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:padding="2dp"
->
+        android:orientation="vertical"
+        android:padding="6dp">
 
     <androidx.cardview.widget.CardView
-            android:elevation="100dp"
             android:id="@+id/cardView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:clickable="true"
+            android:elevation="4dp"
             android:focusable="true"
-            android:foreground="?attr/selectableItemBackground"
-    >
+            android:foreground="?attr/selectableItemBackground">
 
         <androidx.constraintlayout.widget.ConstraintLayout
                 android:layout_width="match_parent"
@@ -29,64 +27,74 @@
                     android:layout_marginStart="4dp"
                     android:layout_marginTop="4dp"
                     android:layout_marginBottom="4dp"
-                    tools:src="@tools:sample/avatars"
-                    tools:layout_editor_absoluteY="56dp"
+                    app:layout_constraintBottom_toBottomOf="parent"
                     app:layout_constraintStart_toStartOf="parent"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-            />
+                    tools:layout_editor_absoluteY="56dp"
+                    tools:src="@tools:sample/avatars" />
 
             <TextView
                     android:id="@+id/artist"
-                    tools:text="Джизус"
                     android:layout_width="0dp"
                     android:layout_height="21dp"
+                    android:layout_marginStart="8dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    app:layout_constraintEnd_toStartOf="@+id/guideline"
                     app:layout_constraintStart_toEndOf="@+id/cover"
-                    android:layout_marginStart="8dp" android:layout_marginTop="8dp"
                     app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintEnd_toStartOf="@+id/guideline" android:layout_marginEnd="8dp"/>
+                    tools:text="Pyrokinesis" />
 
             <TextView
                     android:id="@+id/title"
-                    tools:text="Девочка в классе"
-                    android:textSize="12sp"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    app:layout_constraintStart_toEndOf="@+id/cover"
                     android:layout_marginStart="8dp"
                     android:layout_marginTop="4dp"
+                    android:layout_marginEnd="8dp"
+                    android:textSize="12sp"
+                    app:layout_constraintEnd_toStartOf="@+id/guideline"
+                    app:layout_constraintStart_toEndOf="@+id/cover"
                     app:layout_constraintTop_toBottomOf="@+id/artist"
-                    android:layout_marginEnd="8dp" app:layout_constraintEnd_toStartOf="@+id/guideline"/>
+                    tools:text="Легенда о боге смерти" />
 
             <TextView
-                    tools:text="3:28"
                     android:id="@+id/duration"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
                     android:layout_marginTop="8dp"
+                    android:layout_marginEnd="8dp"
+                    android:layout_marginBottom="8dp"
                     android:gravity="end"
-                    app:layout_constraintTop_toTopOf="parent" android:layout_marginBottom="8dp"
-                    app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintEnd_toEndOf="parent"
-                    android:layout_marginEnd="8dp" app:layout_constraintStart_toStartOf="@+id/guideline"
-                    android:layout_marginStart="8dp" app:layout_constraintHorizontal_bias="0.0"
-                    app:layout_constraintVertical_bias="0.521"/>
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintHorizontal_bias="0.0"
+                    app:layout_constraintStart_toStartOf="@+id/guideline"
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.521"
+                    tools:text="3:28" />
+
             <androidx.constraintlayout.widget.Guideline
-                    android:orientation="vertical"
+                    android:id="@+id/guideline"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:id="@+id/guideline" app:layout_constraintGuide_end="86dp"/>
+                    android:orientation="vertical"
+                    app:layout_constraintGuide_end="86dp" />
+
             <ImageView
+                    android:id="@+id/playbackState"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
-                    tools:srcCompat="@tools:sample/avatars"
-                    android:id="@+id/playbackState"
                     android:layout_marginTop="4dp"
-                    app:layout_constraintTop_toTopOf="parent" android:layout_marginBottom="4dp"
+                    android:layout_marginBottom="4dp"
                     app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="@+id/cover"
                     app:layout_constraintStart_toStartOf="@+id/cover"
-                    app:layout_constraintVertical_bias="0.423" app:layout_constraintEnd_toEndOf="@+id/cover"/>
+                    app:layout_constraintTop_toTopOf="parent"
+                    app:layout_constraintVertical_bias="0.423"
+                    tools:srcCompat="@tools:sample/avatars" />
         </androidx.constraintlayout.widget.ConstraintLayout>
-
 
     </androidx.cardview.widget.CardView>
 

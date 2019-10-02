@@ -6,7 +6,7 @@
             app:startDestination="@id/searchFragment">
     <navigation android:id="@+id/searchFragment" app:startDestination="@id/searchFragmentNav" android:label="Search">
         <fragment android:id="@+id/searchFragmentNav"
-                  android:name="com.epam.listento.ui.SearchFragment"
+                  android:name="com.epam.listento.ui.search.SearchFragment"
                   android:label="Search"
                   tools:layout="@layout/tracks_fragment"/>
         <action android:id="@+id/action_global_playerActivity3" app:destination="@+id/playerActivity"
@@ -15,7 +15,7 @@
     </navigation>
     <navigation android:id="@+id/cacheFragment" app:startDestination="@id/cacheFragmentNav" android:label="Cache">
         <fragment android:id="@+id/cacheFragmentNav"
-                  android:name="com.epam.listento.ui.PlaylistFragment"
+                  android:name="com.epam.listento.ui.cache.PlaylistFragment"
                   android:label="Cache"
                   tools:layout="@layout/cache_fragment"/>
         <action android:id="@+id/action_global_playerActivity32"
@@ -26,12 +26,12 @@
     <navigation android:id="@+id/preferencesFragment" app:startDestination="@id/prefFragment" android:label="Settings">
         <fragment
                 android:id="@+id/prefFragment"
-                android:name="com.epam.listento.ui.PreferencesFragment"
+                android:name="com.epam.listento.ui.settings.PreferencesFragment"
                 android:label="Settings"/>
     </navigation>
-    <activity android:id="@+id/playerActivity" android:name="com.epam.listento.ui.PlayerActivity"
+    <activity android:id="@+id/playerActivity" android:name="com.epam.listento.ui.player.PlayerActivity"
               android:label="player_activity" tools:layout="@layout/player_activity"/>
-    <dialog android:id="@+id/trackDialog" android:name="com.epam.listento.ui.TrackDialog" android:label="TrackDialog">
+    <dialog android:id="@+id/trackDialog" android:name="com.epam.listento.ui.dialogs.TrackDialog" android:label="TrackDialog">
         <argument android:name="id" app:argType="integer" android:defaultValue="-1"/>
         <argument android:name="title" app:argType="string"/>
         <argument android:name="artist" app:argType="string"/>

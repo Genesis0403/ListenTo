@@ -1,22 +1,19 @@
-package com.epam.listento.ui
+package com.epam.listento.ui.settings
 
 import android.os.Bundle
 import androidx.appcompat.widget.Toolbar
-import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.epam.listento.App
 import com.epam.listento.R
-import com.epam.listento.ui.viewmodels.MainViewModel
 import javax.inject.Inject
-
-private const val CLEAR_CACHE = "clear_cache"
 
 class PreferencesFragment : PreferenceFragmentCompat() {
 
     @Inject
-    lateinit var factory: MainViewModel.Factory
-    private val mainViewModel: MainViewModel by activityViewModels {
+    lateinit var factory: SettingsViewModel.Factory
+    private val mainViewModel: SettingsViewModel by viewModels {
         factory
     }
 
@@ -37,5 +34,9 @@ class PreferencesFragment : PreferenceFragmentCompat() {
             mainViewModel.clearCache()
             true
         }
+    }
+
+    private companion object {
+        private const val CLEAR_CACHE = "clear_cache"
     }
 }

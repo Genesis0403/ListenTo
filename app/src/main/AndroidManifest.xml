@@ -25,7 +25,7 @@
             </intent-filter>
         </activity>
 
-        <activity android:name=".ui.PlayerActivity"
+        <activity android:name=".ui.player.PlayerActivity"
                   android:screenOrientation="portrait"
                   android:launchMode="singleTask"
         />

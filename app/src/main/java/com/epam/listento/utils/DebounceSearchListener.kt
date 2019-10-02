@@ -4,23 +4,24 @@ import androidx.appcompat.widget.SearchView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.OnLifecycleEvent
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 internal class DebounceSearchListener(
     lifecycle: Lifecycle,
     private val onResult: (query: String) -> Unit
 ) : SearchView.OnQueryTextListener, LifecycleObserver {
 
-    private companion object {
-        private const val DELAY: Long = 1000
-    }
-
     init {
         lifecycle.addObserver(this)
     }
 
     private var job: Job? = null
-    private val coroutineScope = CoroutineScope(Dispatchers.Main)
+    private val coroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onQueryTextSubmit(query: String?): Boolean {
         return false
@@ -44,5 +45,7 @@ internal class DebounceSearchListener(
         job?.cancel()
     }
 
-    // TODO read about jobs pausing while lifecycle component paused too
+    private companion object {
+        private const val DELAY: Long = 1000
+    }
 }

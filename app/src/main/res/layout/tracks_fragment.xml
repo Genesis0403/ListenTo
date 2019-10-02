@@ -6,7 +6,7 @@
         android:layout_height="match_parent"
         android:id="@+id/tracksContainer"
         android:orientation="vertical"
-        tools:context=".ui.SearchFragment"
+        tools:context=".ui.search.SearchFragment"
 >
 
     <FrameLayout

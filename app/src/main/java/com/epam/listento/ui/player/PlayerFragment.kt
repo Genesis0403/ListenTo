@@ -1,4 +1,4 @@
-package com.epam.listento.ui
+package com.epam.listento.ui.player
 
 import android.annotation.SuppressLint
 import android.content.ComponentName
@@ -179,7 +179,8 @@ class PlayerFragment : Fragment() {
                 val duration = metadata.getLong(MediaMetadataCompat.METADATA_KEY_DURATION).toInt()
                 trackTimeProgress.max = duration
                 loadImage(iconUri.toString())
-                positiveTiming.text = DEFAULT_TIMING
+                positiveTiming.text =
+                    DEFAULT_TIMING
                 negativeTiming.text = MsMapper.convert(duration)
             }
         } else {
@@ -187,8 +188,10 @@ class PlayerFragment : Fragment() {
             artistName.text = DEFAULT_TITLE
             trackTimeProgress.max = 0
             loadImage(null)
-            positiveTiming.text = DEFAULT_TIMING
-            negativeTiming.text = DEFAULT_TIMING
+            positiveTiming.text =
+                DEFAULT_TIMING
+            negativeTiming.text =
+                DEFAULT_TIMING
         }
     }
 

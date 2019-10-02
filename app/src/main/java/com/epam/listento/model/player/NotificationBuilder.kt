@@ -16,7 +16,7 @@ import androidx.media.session.MediaButtonReceiver
 import com.epam.listento.R
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.player.utils.isPlaying
-import com.epam.listento.ui.PlayerActivity
+import com.epam.listento.ui.player.PlayerActivity
 import com.epam.listento.utils.ContextProvider
 import javax.inject.Inject
 

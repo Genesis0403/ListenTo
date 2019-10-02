@@ -7,13 +7,21 @@ import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
-import com.epam.listento.model.player.utils.*
+import com.epam.listento.model.player.utils.albumCover
+import com.epam.listento.model.player.utils.artist
+import com.epam.listento.model.player.utils.duration
+import com.epam.listento.model.player.utils.id
+import com.epam.listento.model.player.utils.title
 import com.epam.listento.repository.global.AudioRepository
 import com.epam.listento.repository.global.FileRepository
 import com.epam.listento.repository.global.StorageRepository
 import com.epam.listento.repository.global.TrackRepository
 import com.epam.listento.utils.ContextProvider
-import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 class DownloadInteractor @Inject constructor(

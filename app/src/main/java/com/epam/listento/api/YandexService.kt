@@ -7,7 +7,11 @@ import com.epam.listento.utils.Json
 import com.epam.listento.utils.Xml
 import okhttp3.ResponseBody
 import retrofit2.Response
-import retrofit2.http.*
+import retrofit2.http.GET
+import retrofit2.http.Path
+import retrofit2.http.Query
+import retrofit2.http.Streaming
+import retrofit2.http.Url
 
 interface YandexService {
 

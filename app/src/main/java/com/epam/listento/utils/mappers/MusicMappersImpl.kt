@@ -1,7 +1,15 @@
 package com.epam.listento.utils.mappers
 
-import com.epam.listento.api.model.*
-import com.epam.listento.domain.*
+import com.epam.listento.api.model.ApiAlbum
+import com.epam.listento.api.model.ApiArtist
+import com.epam.listento.api.model.ApiCover
+import com.epam.listento.api.model.ApiStorage
+import com.epam.listento.api.model.ApiTrack
+import com.epam.listento.domain.DomainAlbum
+import com.epam.listento.domain.DomainArtist
+import com.epam.listento.domain.DomainCover
+import com.epam.listento.domain.DomainStorage
+import com.epam.listento.domain.DomainTrack
 import com.epam.listento.utils.MusicMapper
 import javax.inject.Inject
 

@@ -1,4 +1,4 @@
-package com.epam.listento.ui
+package com.epam.listento.ui.search
 
 import android.content.ComponentName
 import android.content.Context
@@ -29,7 +29,8 @@ import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.utils.id
-import com.epam.listento.ui.viewmodels.SearchScreenViewModel
+import com.epam.listento.ui.TracksAdapter
+import com.epam.listento.ui.dialogs.TrackDialogDirections
 import com.epam.listento.utils.DebounceSearchListener
 import kotlinx.android.synthetic.main.tracks_fragment.progressBar
 import kotlinx.android.synthetic.main.tracks_fragment.tracksRecyclerView
@@ -187,7 +188,6 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             super.onPlaybackStateChanged(state)
-            Log.d(TAG, "PLAYBACK")
             searchScreenViewModel.handlePlaybackStateChange(
                 state?.state ?: PlaybackStateCompat.STATE_NONE
             )
@@ -195,7 +195,6 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
             super.onMetadataChanged(metadata)
-            Log.d(TAG, "METADATA")
             val id = metadata?.id?.toInt() ?: -1
             searchScreenViewModel.handleMetadataChange(id)
         }

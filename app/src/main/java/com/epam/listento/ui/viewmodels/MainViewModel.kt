@@ -48,10 +48,6 @@ class MainViewModel @Inject constructor(
         cacheInteractor.uncacheTrack(id)
     }
 
-    fun clearCache() {
-        cacheInteractor.clearAllCache()
-    }
-
     class Factory @Inject constructor(
         private val provider: Provider<MainViewModel>
     ) : ViewModelProvider.Factory {

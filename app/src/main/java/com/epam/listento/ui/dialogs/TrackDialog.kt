@@ -1,12 +1,10 @@
-package com.epam.listento.ui
+package com.epam.listento.ui.dialogs
 
 import android.app.Dialog
 import android.os.Bundle
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.activityViewModels
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelProviders
 import androidx.navigation.fragment.navArgs
 import com.epam.listento.App
 import com.epam.listento.R
@@ -14,11 +12,6 @@ import com.epam.listento.ui.viewmodels.MainViewModel
 import javax.inject.Inject
 
 class TrackDialog : DialogFragment() {
-
-    private companion object {
-        private const val ADD_TO_CACHE = 0
-        private const val REMOVE_FROM_CACHE = 1
-    }
 
     @Inject
     lateinit var factory: MainViewModel.Factory
@@ -46,5 +39,10 @@ class TrackDialog : DialogFragment() {
             }
         }
         return builder.create()
+    }
+
+    private companion object {
+        private const val ADD_TO_CACHE = 0
+        private const val REMOVE_FROM_CACHE = 1
     }
 }

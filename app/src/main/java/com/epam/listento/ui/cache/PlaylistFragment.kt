@@ -1,4 +1,4 @@
-package com.epam.listento.ui
+package com.epam.listento.ui.cache
 
 import android.content.ComponentName
 import android.content.Context
@@ -25,7 +25,8 @@ import com.epam.listento.R
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.utils.id
-import com.epam.listento.ui.viewmodels.CacheScreenViewModel
+import com.epam.listento.ui.TracksAdapter
+import com.epam.listento.ui.dialogs.TrackDialogDirections
 import kotlinx.android.synthetic.main.tracks_fragment.progressBar
 import kotlinx.android.synthetic.main.tracks_fragment.tracksRecyclerView
 import javax.inject.Inject
@@ -131,11 +132,12 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
                             controller?.transportControls?.play()
                         }
                         is CacheScreenViewModel.NavigationAction.NeedCacheDialog -> {
-                            val actionId = TrackDialogDirections.actionTrackDialog(
-                                action.id,
-                                action.title,
-                                action.artist
-                            )
+                            val actionId =
+                                TrackDialogDirections.actionTrackDialog(
+                                    action.id,
+                                    action.title,
+                                    action.artist
+                                )
                             navController.navigate(actionId)
                         }
                     }
