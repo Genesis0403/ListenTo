@@ -1,4 +1,4 @@
-package com.epam.listento.ui.viewmodels
+package com.epam.listento.ui
 
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatDelegate

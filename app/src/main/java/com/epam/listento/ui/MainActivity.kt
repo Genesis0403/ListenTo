@@ -12,7 +12,6 @@ import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
 import com.epam.listento.App
 import com.epam.listento.R
-import com.epam.listento.ui.viewmodels.MainViewModel
 import kotlinx.android.synthetic.main.activity_main.appToolBar
 import kotlinx.android.synthetic.main.activity_main.navigationBar
 import javax.inject.Inject

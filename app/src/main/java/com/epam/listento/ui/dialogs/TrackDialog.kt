@@ -8,7 +8,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.navigation.fragment.navArgs
 import com.epam.listento.App
 import com.epam.listento.R
-import com.epam.listento.ui.viewmodels.MainViewModel
+import com.epam.listento.ui.MainViewModel
 import javax.inject.Inject
 
 class TrackDialog : DialogFragment() {
