@@ -23,12 +23,12 @@ import kotlin.concurrent.schedule
 class PlayerViewModel @Inject constructor() : ViewModel() {
 
     private val _currentPlaying = MutableLiveData<MetadataTrack>().also {
-        it.postValue(MetadataTrack())
+        it.value = MetadataTrack()
     }
     val currentPlaying: LiveData<MetadataTrack> get() = _currentPlaying
 
     private val _playbackState = MutableLiveData<PlaybackState>().also {
-        it.postValue(PlaybackState.None)
+        it.value = PlaybackState.None
     }
     val playbackState: LiveData<PlaybackState> get() = _playbackState
 
@@ -68,12 +68,31 @@ class PlayerViewModel @Inject constructor() : ViewModel() {
         }
     }
 
+    fun handlePlayButtonClick() {
+
+    }
+
+    fun handleForwardButton() {
+
+    }
+
+    fun handleRewindButton() {
+
+    }
+
     data class MetadataTrack(
         val title: String = NOT_DEFINED_TITLE,
         val artist: String = NOT_DEFINED_TITLE,
         val duration: Long = 0,
         val cover: String = ""
     )
+
+    sealed class PlayerAction {
+        object ShouldPlay : PlayerAction()
+        object ShouldPause : PlayerAction()
+        object ShouldSkipForward : PlayerAction()
+        object ShouldSkipBackward : PlayerAction()
+    }
 
     class Factory @Inject constructor(
         private val provider: Provider<PlayerViewModel>

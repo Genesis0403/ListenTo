@@ -3,6 +3,7 @@ package com.epam.listento.repository
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
+import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.YandexService
 import com.epam.listento.db.TracksDao
 import com.epam.listento.domain.DomainTrack
@@ -14,8 +15,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import retrofit2.Response
 import javax.inject.Inject
-
-private const val TAG = "TRACKS_REPOSITORY"
 
 class TracksRepositoryImpl @Inject constructor(
     private val service: YandexService,
@@ -39,18 +38,23 @@ class TracksRepositoryImpl @Inject constructor(
 
     override suspend fun fetchTracks(
         text: String,
-        completion: suspend (Response<List<DomainTrack>>) -> Unit
+        completion: suspend (ApiResponse<List<DomainTrack>>) -> Unit
     ) {
         try {
             val request = service.searchTracks(text)
             val response = if (request.isSuccessful) {
-                Response.success(request.body()?.tracks?.items?.map { domainMappers.trackToDomain(it) })
+                ApiResponse.success(request.body()?.tracks?.items?.map { domainMappers.trackToDomain(it) })
             } else {
-                Response.error(request.code(), request.errorBody())
+                ApiResponse.error(request.message(), emptyList())
             }
             completion(response)
         } catch (e: Exception) {
             Log.e(TAG, "$e")
+            completion(ApiResponse.error(e))
         }
+    }
+
+    private companion object {
+        private const val TAG = "TRACKS_REPOSITORY"
     }
 }

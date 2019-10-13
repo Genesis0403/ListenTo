@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
+import com.epam.listento.api.Status
 import com.epam.listento.api.mapTrack
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
@@ -39,15 +40,15 @@ class SearchScreenViewModel @Inject constructor(
     fun fetchTracks(query: String) {
         viewModelScope.launch {
             tracksRepo.fetchTracks(query) { response ->
-                if (response.isSuccessful) {
-                    val items = response.body()
+                if (response.status == Status.SUCCESS) {
+                    val items = response.body
                         ?.asSequence()
                         ?.map { mapTrack(it) }
                         ?.filterNotNull()
                         ?.toList()
                     _tracks.postValue(ApiResponse.success(items))
                 } else {
-                    _tracks.postValue(ApiResponse.error(response.message()))
+                    _tracks.postValue(ApiResponse.error(response.error))
                 }
             }
         }

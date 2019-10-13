@@ -33,10 +33,39 @@ import javax.inject.Inject
 
 class PlayerService : Service() {
 
-    private companion object {
-        private const val TAG = "PLAYER_SERVICE"
-        private const val DOES_HANDLE_AUDIO_FOCUS = true
+    private val activityIntent by lazy { Intent(applicationContext, MainActivity::class.java) }
+
+    private val notificationManager by lazy {
+        getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
+
+    private val callback = ControllerCallback()
+
+    private val becomeNoisyReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            when (intent?.action) {
+                AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
+                    controller.transportControls.pause()
+                }
+                else -> return
+            }
+        }
+    }
+
+    private val playerListener = object : Player.EventListener {
+        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+            super.onPlayerStateChanged(playWhenReady, playbackState)
+            if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
+                controller.transportControls.skipToNext()
+            }
+        }
+    }
+
+    private var mediaSessionCallback: MediaSessionCallback? = null
+
+    private var isForeground = false
+
+    lateinit var controller: MediaControllerCompat
 
     @Inject
     lateinit var musicRepo: MusicRepository
@@ -50,19 +79,8 @@ class PlayerService : Service() {
     @Inject
     lateinit var player: SimpleExoPlayer
 
-    private lateinit var mediaSession: MediaSessionCompat
-    lateinit var controller: MediaControllerCompat
-
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
-    private var mediaSessionCallback: MediaSessionCallback? = null
-
-    private val activityIntent by lazy { Intent(applicationContext, MainActivity::class.java) }
-
-    private val notificationManager by lazy {
-        getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-    }
-    private var isForeground = false
-    private val callback = ControllerCallback()
+    private lateinit var mediaSession: MediaSessionCompat
 
     override fun onBind(intent: Intent?): IBinder? {
         return PlayerBinder()
@@ -166,25 +184,6 @@ class PlayerService : Service() {
         mediaSession.isActive = false
         mediaSession.setCallback(null)
         mediaSession.release()
-//        //player.release()
-    }
-
-    inner class PlayerBinder : Binder() {
-        fun getSessionToken(): MediaSessionCompat.Token? = mediaSession.sessionToken
-
-        fun getProgress(): Long = player.currentPosition
-    }
-
-    private inner class ControllerCallback : MediaControllerCompat.Callback() {
-        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-            super.onPlaybackStateChanged(state)
-            state?.let { updateNotification(it) }
-        }
-
-        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-            super.onMetadataChanged(metadata)
-            controller.playbackState?.let { updateNotification(it) }
-        }
     }
 
     private fun updateNotification(state: PlaybackStateCompat) {
@@ -239,23 +238,26 @@ class PlayerService : Service() {
         }
     }
 
-    private val becomeNoisyReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                AudioManager.ACTION_AUDIO_BECOMING_NOISY -> {
-                    controller.transportControls.pause()
-                }
-                else -> return
-            }
+    inner class PlayerBinder : Binder() {
+        fun getSessionToken(): MediaSessionCompat.Token? = mediaSession.sessionToken
+
+        fun getProgress(): Long = player.currentPosition
+    }
+
+    private inner class ControllerCallback : MediaControllerCompat.Callback() {
+        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
+            super.onPlaybackStateChanged(state)
+            state?.let { updateNotification(it) }
+        }
+
+        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
+            super.onMetadataChanged(metadata)
+            controller.playbackState?.let { updateNotification(it) }
         }
     }
 
-    private val playerListener = object : Player.EventListener {
-        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
-            super.onPlayerStateChanged(playWhenReady, playbackState)
-            if (playWhenReady && playbackState == ExoPlayer.STATE_ENDED) {
-                controller.transportControls.skipToNext()
-            }
-        }
+    private companion object {
+        private const val TAG = "PLAYER_SERVICE"
+        private const val DOES_HANDLE_AUDIO_FOCUS = true
     }
 }

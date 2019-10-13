@@ -10,7 +10,6 @@ import android.os.IBinder
 import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -41,6 +40,7 @@ import javax.inject.Inject
 
 class PlayerFragment : Fragment() {
 
+    //TODO pass current playing track via bundle
     private val playerViewModel: PlayerViewModel by viewModels {
         factory
     }
@@ -55,11 +55,6 @@ class PlayerFragment : Fragment() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App.component.inject(this)
-        activity?.bindService(
-            Intent(activity, PlayerService::class.java),
-            connection,
-            Context.BIND_AUTO_CREATE
-        )
     }
 
     override fun onCreateView(
@@ -98,22 +93,30 @@ class PlayerFragment : Fragment() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        activity?.bindService(
+            Intent(activity, PlayerService::class.java),
+            connection,
+            Context.BIND_AUTO_CREATE
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        activity?.unbindService(connection)
+        controller?.unregisterCallback(controllerCallback)
+        binder = null
+        controller = null
+        playerViewModel.stopScheduler()
+    }
+
     private fun initOnSkipListener(action: () -> Unit) {
         val state = controller?.playbackState?.state
         if (state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_PAUSED) {
             action()
             trackTimeProgress.progress = 0
         }
-    }
-
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "DESTROYED")
-        activity?.unbindService(connection)
-        controller?.unregisterCallback(controllerCallback)
-        binder = null
-        controller = null
-        playerViewModel.stopScheduler()
     }
 
     private fun listenToPlayerState() {
@@ -210,9 +213,7 @@ class PlayerFragment : Fragment() {
             binder?.let {
                 val token = it.getSessionToken() ?: return
                 controller = MediaControllerCompat(requireActivity(), token).also { controller ->
-                    controller.registerCallback(
-                        controllerCallback
-                    )
+                    controller.registerCallback(controllerCallback)
                 }
             }
         }
@@ -221,7 +222,9 @@ class PlayerFragment : Fragment() {
     private val controllerCallback = object : MediaControllerCompat.Callback() {
         override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
             super.onPlaybackStateChanged(state)
-            playerViewModel.handlePlaybackStateChange(state?.state ?: -1)
+            playerViewModel.handlePlaybackStateChange(
+                state?.state ?: PlaybackStateCompat.STATE_NONE
+            )
         }
 
         override fun onMetadataChanged(metadata: MediaMetadataCompat?) {

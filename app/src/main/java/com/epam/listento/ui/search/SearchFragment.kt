@@ -13,7 +13,6 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.widget.SearchView
 import androidx.appcompat.widget.Toolbar
@@ -91,7 +90,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
             menu.clear()
             inflateMenu(R.menu.search_toolbar_menu)
             val searchView = menu.findItem(R.id.actionSearch).actionView as SearchView
-            listenToSearchViewQuery(searchView, progressBar)
+            listenToSearchViewQuery(searchView)
         }
 
         tracksRecyclerView.run {
@@ -111,10 +110,10 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         activity?.unbindService(connection)
     }
 
-    private fun listenToSearchViewQuery(searchView: SearchView, progress: ProgressBar) {
+    private fun listenToSearchViewQuery(searchView: SearchView) {
         searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
             if (query.isNotEmpty()) {
-                progress.isVisible = true
+                progressBar.isVisible = true
                 searchScreenViewModel.fetchTracks(query)
             }
         })
@@ -122,12 +121,10 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     private fun initObservers() {
         with(searchScreenViewModel) {
-
             tracks.observe(viewLifecycleOwner, Observer<ApiResponse<List<Track>>> {
                 if (it.status.isSuccess()) {
                     val newData = it.body ?: emptyList()
                     tracksAdapter.submitList(newData)
-                    progressBar.isVisible = false
                 } else {
                     Toast.makeText(
                         context,
@@ -135,6 +132,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
+                progressBar.isVisible = false
             })
 
             currentPlaying.observe(viewLifecycleOwner, Observer<Track> {
