@@ -38,7 +38,7 @@ class MainViewModel @Inject constructor(
     }
 
     fun cacheTrack(id: Int, title: String, artist: String) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatchers.ui) {
             val response = withContext(dispatchers.io) {
                 downloadInteractor.downloadTrack(id, title, artist)
             }

@@ -1,21 +1,17 @@
-package com.epam.listento.ui.search
+package com.epam.listento.ui.cache
 
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.lifecycle.Observer
-import com.epam.listento.R
-import com.epam.listento.api.ApiResponse
-import com.epam.listento.api.Status
-import com.epam.listento.domain.DomainTrack
+import com.epam.listento.db.TracksDao
 import com.epam.listento.model.Album
 import com.epam.listento.model.Artist
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.repository.global.MusicRepository
-import com.epam.listento.repository.global.TracksRepository
 import com.epam.listento.utils.AppDispatchers
+import com.epam.listento.utils.PlatformMappers
 import com.epam.listento.utils.emulateInstanteTaskExecutorRule
 import io.mockk.clearMocks
-import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.spyk
@@ -28,24 +24,25 @@ import org.spekframework.spek2.style.specification.describe
 import kotlin.test.assertTrue
 
 @RunWith(JUnitPlatform::class)
-object SearchScreenViewModelSpek : Spek({
+class CacheScreenViewModelSpek : Spek({
 
     emulateInstanteTaskExecutorRule()
 
     val musicRepo: MusicRepository = mockk(relaxed = true)
-    val tracksRepo: TracksRepository = mockk(relaxed = true)
+    val mappers: PlatformMappers = mockk(relaxed = true)
+    val dao: TracksDao = mockk(relaxed = true)
     val dispatchers: AppDispatchers = mockk(relaxed = true)
 
-    var navObserver: Observer<SearchScreenViewModel.Command> = mockk(relaxed = true)
-    var currentObserver: Observer<Track> = mockk(relaxed = true)
+    var tracksObserver: Observer<List<Track>> = mockk(relaxed = true)
     var stateObserver: Observer<PlaybackState> = mockk(relaxed = true)
-    var tracksObserver: Observer<ApiResponse<List<Track>>> = mockk(relaxed = true)
+    var commandObserver: Observer<CacheScreenViewModel.Command> = mockk(relaxed = true)
+    var currentObserver: Observer<Track> = mockk(relaxed = true)
 
     val currentTrack: Track = mockk(relaxed = true)
     val artist: Artist = mockk(relaxed = true)
     val album: Album = mockk(relaxed = true)
 
-    lateinit var viewModel: SearchScreenViewModel
+    lateinit var viewModel: CacheScreenViewModel
 
     val mockedId = 1
     val mockedDuration = 0L
@@ -65,17 +62,18 @@ object SearchScreenViewModelSpek : Spek({
 
     fun createViewModel() {
         viewModel = spyk(
-            SearchScreenViewModel(
-                tracksRepo,
+            CacheScreenViewModel(
                 musicRepo,
-                dispatchers
+                mappers,
+                dispatchers,
+                dao
             )
         )
     }
 
     beforeEachTest {
-        every { dispatchers.default } returns Dispatchers.Unconfined
         every { dispatchers.ui } returns Dispatchers.Unconfined
+        every { dispatchers.default } returns Dispatchers.Unconfined
         every { dispatchers.io } returns Dispatchers.Unconfined
     }
 
@@ -83,67 +81,28 @@ object SearchScreenViewModelSpek : Spek({
         clearMocks(dispatchers)
     }
 
-    describe("tracks fetching") {
-
-        val mockedQuery = "some_track"
-        val mockedError = "some_error"
-        var mockedFetchResponse: ApiResponse<List<DomainTrack>> = mockk(relaxed = true)
-
-        beforeEachTest {
-            createViewModel()
-            tracksObserver = mockk(relaxed = true)
-            mockedFetchResponse = mockk(relaxed = true)
-            viewModel.tracks.observeForever(tracksObserver)
-
-            coEvery { tracksRepo.fetchTracks(mockedQuery) } returns mockedFetchResponse
-        }
-
-        afterEachTest {
-            viewModel.tracks.removeObserver(tracksObserver)
-            clearMocks(tracksObserver, tracksRepo, mockedFetchResponse)
-        }
-
-        it("should fetch successfully") {
-            every { mockedFetchResponse.status } returns Status.SUCCESS
-            every { mockedFetchResponse.body } returns emptyList()
-
-            viewModel.fetchTracks(mockedQuery)
-            verify { tracksObserver.onChanged(any()) }
-            assertTrue { viewModel.tracks.value?.status == Status.SUCCESS }
-        }
-
-        it("should be an error") {
-            every { mockedFetchResponse.status } returns Status.ERROR
-            every { mockedFetchResponse.error } returns mockedError
-
-            viewModel.fetchTracks(mockedQuery)
-            verify { tracksObserver.onChanged(any()) }
-            assertTrue { viewModel.tracks.value?.status == Status.ERROR }
-        }
-    }
-
     describe("item click") {
 
         beforeEachTest {
             createViewModel()
-            navObserver = mockk(relaxed = true)
-            viewModel.command.observeForever(navObserver)
+            commandObserver = mockk(relaxed = true)
+            viewModel.command.observeForever(commandObserver)
             every { viewModel.playbackState.value } returns PlaybackState.Playing
             every { viewModel.currentPlaying.value } returns currentTrack
             every { currentTrack.id } returns mockedId
         }
 
         afterEachTest {
-            viewModel.command.removeObserver(navObserver)
-            clearMocks(navObserver)
+            viewModel.command.removeObserver(commandObserver)
+            clearMocks(commandObserver)
         }
 
         it("should navigate to player") {
             viewModel.handleItemClick(mockedTrack)
-            verify { navObserver.onChanged(SearchScreenViewModel.Command.ShowPlayerActivity) }
+            verify { commandObserver.onChanged(CacheScreenViewModel.Command.ShowPlayerActivity) }
         }
 
-        it("should play track") {
+        it("should change playlist") {
             val id = 2
             val track = Track(
                 id,
@@ -155,7 +114,7 @@ object SearchScreenViewModelSpek : Spek({
                 mockedResId
             )
             viewModel.handleItemClick(track)
-            verify { navObserver.onChanged(SearchScreenViewModel.Command.PlayTrack) }
+            verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }
     }
 
@@ -163,19 +122,19 @@ object SearchScreenViewModelSpek : Spek({
 
         beforeEachTest {
             createViewModel()
-            navObserver = mockk(relaxed = true)
-            viewModel.command.observeForever(navObserver)
+            commandObserver = mockk(relaxed = true)
+            viewModel.command.observeForever(commandObserver)
             every { artist.name } returns ""
         }
 
         afterEachTest {
-            viewModel.command.removeObserver(navObserver)
-            clearMocks(navObserver)
+            viewModel.command.removeObserver(commandObserver)
+            clearMocks(commandObserver)
         }
 
         it("should show cache dialog") {
             viewModel.handleLongItemClick(mockedTrack)
-            assertTrue { viewModel.command.value is SearchScreenViewModel.Command.ShowCacheDialog }
+            assertTrue { viewModel.command.value is CacheScreenViewModel.Command.ShowCacheDialog }
         }
     }
 
@@ -185,7 +144,7 @@ object SearchScreenViewModelSpek : Spek({
             currentObserver = mockk(relaxed = true)
             createViewModel()
             viewModel.currentPlaying.observeForever(currentObserver)
-            every { viewModel.tracks.value?.body } returns listOf(mockedTrack)
+            every { viewModel.tracks.value } returns listOf(mockedTrack)
         }
 
         afterEachTest {

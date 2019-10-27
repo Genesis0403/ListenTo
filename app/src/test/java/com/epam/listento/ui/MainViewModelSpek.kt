@@ -1,10 +1,7 @@
 package com.epam.listento.ui
 
-import android.content.Context
-import android.net.Uri
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.Observer
-import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.CacheInteractor
 import com.epam.listento.model.DownloadInteractor
 import com.epam.listento.utils.AppDispatchers
@@ -30,10 +27,6 @@ object MainViewModelSpek : Spek({
     val cacheInteractor: CacheInteractor = mockk(relaxed = true)
     val downloadInteractor: DownloadInteractor = mockk(relaxed = true)
     val dispatchers: AppDispatchers = mockk(relaxed = true)
-
-    val context: Context = mockk(relaxed = true)
-    val response: ApiResponse<Uri> = mockk(relaxed = true)
-    val completion: (ApiResponse<Uri>) -> Unit = mockk(relaxUnitFun = true)
 
     var nightObserver: Observer<Int> = mockk(relaxed = true)
 

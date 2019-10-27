@@ -14,15 +14,18 @@ import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.MusicRepository
+import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.PlatformMappers
 import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Provider
 
 class CacheScreenViewModel @Inject constructor(
     private val musicRepo: MusicRepository,
     private val mappers: PlatformMappers,
+    private val dispatchers: AppDispatchers,
     dao: TracksDao
 ) : ViewModel() {
 
@@ -32,36 +35,37 @@ class CacheScreenViewModel @Inject constructor(
     private val _playbackState = MutableLiveData<PlaybackState>()
     val playbackState: LiveData<PlaybackState> get() = _playbackState
 
-    private val _navigationAction: MutableLiveData<Command> = SingleLiveEvent()
-    val navigationActions: LiveData<Command> get() = _navigationAction
+    private val _command: MutableLiveData<Command> = SingleLiveEvent()
+    val command: LiveData<Command> get() = _command
 
-    private val _cachedTracks: MutableLiveData<List<Track>> =
+    private val _tracks: MutableLiveData<List<Track>> =
         Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
             MutableLiveData<List<Track>>().apply {
                 value = mapTracksToPlatform(domain)
             }
         } as MutableLiveData
-    val cachedTracks: LiveData<List<Track>> get() = _cachedTracks
+    val tracks: LiveData<List<Track>> get() = _tracks
 
     fun handleItemClick(track: Track) {
-        val current = currentPlaying.value
-        val state = playbackState.value
-        _navigationAction.value = if (state != PlaybackState.Stopped &&
-            state != PlaybackState.Paused &&
-            current?.id == track.id
-        ) {
-            Command.ShowPlayerActivity
-        } else {
-            Command.ChangePlaylist(
-                track
-            )
+        viewModelScope.launch(dispatchers.ui) {
+            val current = currentPlaying.value
+            val state = playbackState.value
+            _command.value = if (state != PlaybackState.Stopped &&
+                state != PlaybackState.Paused &&
+                current?.id == track.id
+            ) {
+                Command.ShowPlayerActivity
+            } else {
+                changePlaylistAndPlayCurrent(track)
+                Command.PlayTrack
+            }
         }
     }
 
     fun handleLongItemClick(track: Track) {
         // TODO create playlist on long click and add dots menu for cache actions
         val artist = track.artist?.name ?: ""
-        _navigationAction.value =
+        _command.value =
             Command.ShowCacheDialog(
                 track.id,
                 track.title,
@@ -70,8 +74,10 @@ class CacheScreenViewModel @Inject constructor(
     }
 
     fun handleMetadataChange(trackId: Int) {
-        viewModelScope.launch {
-            _currentPlaying.value = _cachedTracks.value?.find { it.id == trackId } ?: return@launch
+        viewModelScope.launch(dispatchers.ui) {
+            _currentPlaying.value = withContext(dispatchers.default) {
+                tracks.value?.find { it.id == trackId }
+            } ?: return@launch
         }
     }
 
@@ -85,22 +91,24 @@ class CacheScreenViewModel @Inject constructor(
     }
 
     fun handlePlayerStateChange(trackId: Int = -1) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatchers.default) {
             val newRes = getPlaybackRes()
 
-            val result = _cachedTracks.value?.map { track ->
+            val result = _tracks.value?.map { track ->
                 val resId = if (track.id == trackId) newRes else Track.NO_RES
                 track.copy(res = resId)
             }
-            _cachedTracks.postValue(result)
+            _tracks.postValue(result)
         }
     }
 
-    fun changePlaylistAndSetCurrent(track: Track) {
-        viewModelScope.launch {
-            _cachedTracks.value?.map { it.toMetadata() }?.let { metadata ->
-                musicRepo.setSource(metadata)
-                musicRepo.setCurrent(track.toMetadata())
+    private suspend fun changePlaylistAndPlayCurrent(track: Track) {
+        withContext(dispatchers.default) {
+            _tracks.value?.map { it.toMetadata() }?.let { metadata ->
+                withContext(dispatchers.ui) {
+                    musicRepo.setSource(metadata)
+                    musicRepo.setCurrent(track.toMetadata())
+                }
             }
         }
     }
@@ -129,7 +137,7 @@ class CacheScreenViewModel @Inject constructor(
 
     sealed class Command {
         object ShowPlayerActivity : Command()
-        class ChangePlaylist(val track: Track) : Command()
+        object PlayTrack : Command()
         class ShowCacheDialog(
             val id: Int,
             val title: String,

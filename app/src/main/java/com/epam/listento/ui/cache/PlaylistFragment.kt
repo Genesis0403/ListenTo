@@ -111,7 +111,7 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
     private fun initObservers() {
         with(cacheViewModel) {
 
-            cachedTracks.observe(viewLifecycleOwner, Observer<List<Track>> {
+            tracks.observe(viewLifecycleOwner, Observer<List<Track>> {
                 val newData = it ?: emptyList()
                 tracksAdapter.submitList(newData)
                 progressBar.isVisible = false
@@ -121,15 +121,14 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
                 cacheViewModel.handlePlayerStateChange(it.id)
             })
 
-            navigationActions.observe(
+            command.observe(
                 viewLifecycleOwner,
                 Observer<CacheScreenViewModel.Command> { action ->
                     when (action) {
                         CacheScreenViewModel.Command.ShowPlayerActivity -> {
                             navController.navigate(R.id.playerActivity)
                         }
-                        is CacheScreenViewModel.Command.ChangePlaylist -> {
-                            cacheViewModel.changePlaylistAndSetCurrent(action.track)
+                        is CacheScreenViewModel.Command.PlayTrack -> {
                             controller?.transportControls?.play()
                         }
                         is CacheScreenViewModel.Command.ShowCacheDialog -> {
