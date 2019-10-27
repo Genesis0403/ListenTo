@@ -16,15 +16,13 @@ class StorageRepositoryImpl @Inject constructor(
 ) : StorageRepository {
 
     override suspend fun fetchStorage(
-        storageDir: String,
-        completion: suspend (ApiResponse<DomainStorage>) -> Unit
-    ) {
-        try {
-            val result =
-                ApiResponse.success(mappers.storageToDomain(service.fetchStorage(storageDir).body()!!))
-            completion(result)
-        } catch (e: Exception) {
+        storageDir: String
+    ): ApiResponse<DomainStorage> {
+        return try {
+            ApiResponse.success(mappers.storageToDomain(service.fetchStorage(storageDir).body()!!))
+        } catch (e: Throwable) {
             Log.e(TAG, "$e")
+            ApiResponse.error(e)
         }
     }
 }

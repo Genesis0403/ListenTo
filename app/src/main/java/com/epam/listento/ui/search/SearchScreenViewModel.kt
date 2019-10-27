@@ -103,7 +103,7 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
-    fun handlePlayerStateChange(trackId: Int) {
+    fun handlePlayerStateChange(trackId: Int = -1) {
         viewModelScope.launch(dispatchers.default) {
             val newRes = when (playbackState.value) {
                 PlaybackState.Playing -> R.drawable.exo_icon_pause
@@ -111,7 +111,7 @@ class SearchScreenViewModel @Inject constructor(
                 else -> Track.NO_RES
             }
 
-            val result = _tracks.value?.body?.map { track ->
+            val result = tracks.value?.body?.map { track ->
                 val resId = if (track.id == trackId) newRes else Track.NO_RES
                 track.copy(res = resId)
             }

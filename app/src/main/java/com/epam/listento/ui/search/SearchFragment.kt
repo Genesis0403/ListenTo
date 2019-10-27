@@ -27,6 +27,7 @@ import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
+import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.player.utils.id
 import com.epam.listento.ui.TracksAdapter
 import com.epam.listento.ui.dialogs.TrackDialogDirections
@@ -159,6 +160,13 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
                         }
                     }
                 })
+
+            playbackState.observe(
+                viewLifecycleOwner,
+                Observer<PlaybackState> {
+                    handlePlayerStateChange(currentPlaying.value?.id ?: -1)
+                }
+            )
         }
     }
 
@@ -198,6 +206,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
         override fun onSessionDestroyed() {
             super.onSessionDestroyed()
+            searchScreenViewModel.handlePlayerStateChange()
             controller?.unregisterCallback(this)
         }
     }

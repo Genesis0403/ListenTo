@@ -2,6 +2,7 @@ package com.epam.listento.repository
 
 import android.net.Uri
 import android.os.Environment
+import androidx.annotation.WorkerThread
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.YandexService
 import com.epam.listento.db.AppDatabase
@@ -24,21 +25,21 @@ class TrackRepositoryImpl @Inject constructor(
     private val dao: TracksDao
 ) : TrackRepository {
 
+    @WorkerThread
     override suspend fun fetchTrack(
         id: Int,
-        isCaching: Boolean,
-        completion: suspend (ApiResponse<DomainTrack>) -> Unit
-    ) {
+        isCaching: Boolean
+    ): ApiResponse<DomainTrack> {
         val response = service.fetchTrack(id)
-        if (response.isSuccessful && response.body() != null) {
+        return if (response.isSuccessful && response.body() != null) {
 
             val track = mappers.trackToDomain(response.body()?.track!!)
             if (isCaching) {
                 cacheTrack(track)
             }
-            completion(ApiResponse.success(track))
+            ApiResponse.success(track)
         } else {
-            completion(ApiResponse.error(response.message()))
+            ApiResponse.error(response.message())
         }
     }
 
@@ -47,10 +48,10 @@ class TrackRepositoryImpl @Inject constructor(
         return file.exists()
     }
 
-    override fun fetchTrackUri(trackName: String): Uri {
-        if (!checkTrackExistence(trackName)) return Uri.EMPTY
+    override fun fetchTrackPath(trackName: String): String {
+        if (!checkTrackExistence(trackName)) return Uri.EMPTY.toString()
         val file = getTrackFile(trackName)
-        return Uri.fromFile(file)
+        return file.path
     }
 
     private fun getTrackFile(trackName: String): File {

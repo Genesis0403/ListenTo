@@ -1,8 +1,9 @@
 package com.epam.listento.model
 
 import android.graphics.Bitmap
-import android.net.Uri
 import android.support.v4.media.MediaMetadataCompat
+import androidx.annotation.AnyThread
+import androidx.annotation.WorkerThread
 import androidx.preference.PreferenceManager
 import com.bumptech.glide.Glide
 import com.epam.listento.R
@@ -17,11 +18,6 @@ import com.epam.listento.repository.global.FileRepository
 import com.epam.listento.repository.global.StorageRepository
 import com.epam.listento.repository.global.TrackRepository
 import com.epam.listento.utils.ContextProvider
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 /**
@@ -37,128 +33,112 @@ class DownloadInteractor @Inject constructor(
 ) {
 
     private val metadataBuilder = MediaMetadataCompat.Builder()
-    private var fetchJob: Job? = null
-    private var downloadJob: Job? = null
 
-    fun downloadTrack(
+    @WorkerThread
+    suspend fun downloadTrack(
         track: MediaMetadataCompat,
-        isCaching: Boolean,
-        completion: (ApiResponse<Uri>) -> Unit
-    ) {
+        isCaching: Boolean
+    ): ApiResponse<String> {
         val trackName = "${track.artist}-${track.title}.mp3"
-        if (trackRepo.checkTrackExistence(trackName)) {
-            val uri = trackRepo.fetchTrackUri(trackName)
+        return if (trackRepo.checkTrackExistence(trackName)) {
+            val filePath = trackRepo.fetchTrackPath(trackName)
             cacheTrack(track, isCaching)
-            completion(ApiResponse.success(uri))
+            ApiResponse.success(filePath)
         } else {
-            fetchTrack(track.id.toInt(), isCaching) { url ->
-                if (url.status.isSuccess() && url.body != null) {
-                    downloadFile(trackName, url.body) { result ->
-                        completion(result)
-                    }
-                } else {
-                    completion(ApiResponse.error(url.error!!))
-                }
+            val url = fetchTrack(track.id.toInt(), isCaching)
+            if (url.status.isSuccess() && url.body != null) {
+                downloadFile(trackName, url.body)
+            } else {
+                ApiResponse.error(url.error)
             }
         }
     }
 
-    fun downloadTrack(
+    @WorkerThread
+    suspend fun downloadTrack(
         id: Int,
         title: String,
-        artist: String,
-        completion: (ApiResponse<Uri>) -> Unit
-    ) {
+        artist: String
+    ): ApiResponse<String> {
         val trackName = "$artist-$title.mp3"
-        if (trackRepo.checkTrackExistence(trackName)) {
-            val uri = trackRepo.fetchTrackUri(trackName)
-            cacheInteractor.cacheTrack(id) {}
-            completion(ApiResponse.success(uri))
+        return if (trackRepo.checkTrackExistence(trackName)) {
+            val trackPath = trackRepo.fetchTrackPath(trackName)
+            cacheInteractor.cacheTrack(id)
+            ApiResponse.success(trackPath)
         } else {
-            fetchTrack(id, true) { url ->
-                if (url.status.isSuccess() && url.body != null) {
-                    downloadFile(trackName, url.body) { result ->
-                        completion(result)
-                    }
-                } else {
-                    completion(ApiResponse.error(url.error!!))
-                }
+            val url = fetchTrack(id, true)
+            if (url.status.isSuccess() && url.body != null) {
+                downloadFile(trackName, url.body)
+            } else {
+                ApiResponse.error(url.error)
             }
         }
     }
 
+    @AnyThread
     fun isCaching(): Boolean {
         val prefs = PreferenceManager.getDefaultSharedPreferences(contextProvider.context())
         return prefs.getBoolean(contextProvider.getString(R.string.default_caching_key), false)
     }
 
-    private fun cacheTrack(track: MediaMetadataCompat, isCaching: Boolean) {
-        cacheInteractor.isTrackInCache(track.id.toInt()) { isInCache ->
-            if (isCaching && !isInCache) {
-                fetchTrack(track.id.toInt(), isCaching) {}
-            }
+    @WorkerThread
+    private suspend fun cacheTrack(track: MediaMetadataCompat, isCaching: Boolean) {
+        val isInCache = cacheInteractor.isTrackInCache(track.id.toInt())
+        if (isCaching && !isInCache) {
+            fetchTrack(track.id.toInt(), isCaching)
         }
     }
 
-    private fun fetchTrack(
+    @WorkerThread
+    private suspend fun fetchTrack(
         id: Int,
-        isCaching: Boolean,
-        completion: suspend (ApiResponse<String>) -> Unit
-    ) {
-        fetchJob?.cancel()
-        fetchJob = GlobalScope.launch(Dispatchers.IO) {
-            trackRepo.fetchTrack(id, isCaching) { response ->
-                if (response.status.isSuccess() && response.body != null) {
-                    storageRepo.fetchStorage(response.body.storageDir!!) { storage ->
-                        if (storage.status.isSuccess() && storage.body != null) {
-                            val url = audioRepo.fetchAudioUrl(storage.body)
-                            completion(ApiResponse.success(url))
-                        } else {
-                            completion(ApiResponse.error(storage.error!!))
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    fun downloadFile(
-        trackName: String,
-        url: String,
-        completion: (ApiResponse<Uri>) -> Unit
-    ) {
-        downloadJob?.cancel()
-        downloadJob = GlobalScope.launch(Dispatchers.IO) {
-            fileRepo.downloadTrack(trackName, url) { response ->
-                withContext(Dispatchers.Main) {
-                    if (response.isSuccessful && response.body() != null) {
-                        completion(ApiResponse.success(response.body()))
+        isCaching: Boolean
+    ): ApiResponse<String> {
+        return trackRepo.fetchTrack(id, isCaching).run {
+            if (status.isSuccess() && body != null) {
+                storageRepo.fetchStorage(body.storageDir!!).run {
+                    if (status.isSuccess() && body != null) {
+                        val url = audioRepo.fetchAudioUrl(body)
+                        ApiResponse.success(url)
                     } else {
-                        completion(ApiResponse.error(response.message()))
+                        ApiResponse.error(error)
                     }
                 }
+            } else {
+                ApiResponse.error(DOWNLOAD_ERROR)
             }
         }
     }
 
-    fun fillMetadata(track: MediaMetadataCompat, completion: (MediaMetadataCompat) -> Unit) {
-        GlobalScope.launch(Dispatchers.IO) {
-            val bitmap = downloadBitmap(track.albumCover)
-            val metadata = metadataBuilder
-                .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.id)
-                .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist)
-                .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
-                .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration)
-                .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, track.albumCover)
-                .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
-                .build()
-            withContext(Dispatchers.Main) {
-                completion(metadata)
+    @WorkerThread
+    suspend fun downloadFile(
+        trackName: String,
+        url: String
+    ): ApiResponse<String> {
+        return fileRepo.downloadTrack(trackName, url).run {
+            if (status.isSuccess() && body != null) {
+                ApiResponse.success(body.toString())
+            } else {
+                ApiResponse.error(error)
             }
         }
     }
 
-    private fun downloadBitmap(url: String): Bitmap? {
+    @WorkerThread
+    suspend fun fillMetadata(track: MediaMetadataCompat): MediaMetadataCompat {
+        val bitmap = downloadBitmap(track.albumCover)
+        return metadataBuilder
+            .putString(MediaMetadataCompat.METADATA_KEY_MEDIA_ID, track.id)
+            .putString(MediaMetadataCompat.METADATA_KEY_ARTIST, track.artist)
+            .putString(MediaMetadataCompat.METADATA_KEY_TITLE, track.title)
+            .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, track.duration)
+            .putString(MediaMetadataCompat.METADATA_KEY_ALBUM_ART_URI, track.albumCover)
+            .putBitmap(MediaMetadataCompat.METADATA_KEY_ALBUM_ART, bitmap)
+            .build()
+    }
+
+    @WorkerThread
+    private suspend fun downloadBitmap(url: String): Bitmap? {
         return Glide.with(contextProvider.context())
             .asBitmap()
             .load(url)
@@ -171,5 +151,6 @@ class DownloadInteractor @Inject constructor(
     private companion object {
         private const val WIDTH = 320
         private const val HEIGHT = 320
+        private const val DOWNLOAD_ERROR = "An error occurred during downloading."
     }
 }

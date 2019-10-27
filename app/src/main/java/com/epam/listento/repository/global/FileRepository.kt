@@ -1,12 +1,10 @@
 package com.epam.listento.repository.global
 
-import android.net.Uri
-import retrofit2.Response
+import com.epam.listento.api.ApiResponse
 
 interface FileRepository {
     suspend fun downloadTrack(
         trackName: String,
-        audioUrl: String,
-        completion: suspend (Response<Uri>) -> Unit
-    )
+        audioUrl: String
+    ): ApiResponse<String>
 }

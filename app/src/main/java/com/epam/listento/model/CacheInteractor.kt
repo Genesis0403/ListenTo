@@ -1,17 +1,12 @@
 package com.epam.listento.model
 
 import android.os.Environment
+import androidx.annotation.WorkerThread
 import com.epam.listento.R
 import com.epam.listento.db.AppDatabase
 import com.epam.listento.db.TracksDao
 import com.epam.listento.repository.global.TrackRepository
 import com.epam.listento.utils.ContextProvider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import java.io.File
 import javax.inject.Inject
 
@@ -22,52 +17,33 @@ class CacheInteractor @Inject constructor(
     private val dao: TracksDao
 ) {
 
-    private val cacheScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
-    private var checkJob: Job? = null
-
-    fun isTrackInCache(
-        id: Int,
-        completion: (isInCache: Boolean) -> Unit
-    ) {
-        checkJob?.cancel()
-        checkJob = cacheScope.launch(Dispatchers.IO) {
-            db.runInTransaction {
-                val tracks = dao.getTracks()
-                val isInCache = tracks.any { it.id == id }
-                CoroutineScope(Dispatchers.Main).launch {
-                    completion(isInCache)
-                }
-            }
-        }
+    @WorkerThread
+    suspend fun isTrackInCache(id: Int): Boolean {
+        val tracks = dao.getTracks()
+        return tracks.any { it.id == id }
     }
 
-    fun cacheTrack(id: Int, completion: (isSuccess: Boolean) -> Unit) {
-        cacheScope.launch(Dispatchers.IO) {
-            trackRepo.fetchTrack(id, true) { response ->
-                withContext(Dispatchers.Main) {
-                    completion(response.status.isSuccess())
-                }
-            }
-        }
+    @WorkerThread
+    suspend fun cacheTrack(id: Int): Boolean {
+        return trackRepo.fetchTrack(id, true).status.isSuccess()
     }
 
+    @WorkerThread
     fun uncacheTrack(id: Int) {
-        cacheScope.launch(Dispatchers.IO) {
-            db.runInTransaction {
-                dao.deleteTrackById(id)
-            }
+        db.runInTransaction {
+            dao.deleteTrackById(id)
         }
     }
 
+    @WorkerThread
     fun clearAllCache() {
-        cacheScope.launch(Dispatchers.IO) {
-            db.runInTransaction {
-                dao.removeTracks()
-                clearFolder()
-            }
+        db.runInTransaction {
+            dao.removeTracks()
+            clearFolder()
         }
     }
 
+    @WorkerThread
     private fun clearFolder() {
         val context = contextProvider.context()
         File(

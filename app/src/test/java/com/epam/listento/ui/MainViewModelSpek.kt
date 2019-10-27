@@ -7,11 +7,14 @@ import androidx.lifecycle.Observer
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.model.CacheInteractor
 import com.epam.listento.model.DownloadInteractor
+import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.ContextProvider
 import com.epam.listento.utils.emulateInstanteTaskExecutorRule
 import io.mockk.clearMocks
+import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
+import kotlinx.coroutines.Dispatchers
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers.anyInt
@@ -26,6 +29,7 @@ object MainViewModelSpek : Spek({
     val contextPovider: ContextProvider = mockk(relaxed = true)
     val cacheInteractor: CacheInteractor = mockk(relaxed = true)
     val downloadInteractor: DownloadInteractor = mockk(relaxed = true)
+    val dispatchers: AppDispatchers = mockk(relaxed = true)
 
     val context: Context = mockk(relaxed = true)
     val response: ApiResponse<Uri> = mockk(relaxed = true)
@@ -41,8 +45,19 @@ object MainViewModelSpek : Spek({
         viewModel = MainViewModel(
             contextPovider,
             cacheInteractor,
-            downloadInteractor
+            downloadInteractor,
+            dispatchers
         )
+    }
+
+    beforeEachTest {
+        every { dispatchers.default } returns Dispatchers.Unconfined
+        every { dispatchers.ui } returns Dispatchers.Unconfined
+        every { dispatchers.io } returns Dispatchers.Unconfined
+    }
+
+    afterEachTest {
+        clearMocks(dispatchers)
     }
 
     describe("theme change") {

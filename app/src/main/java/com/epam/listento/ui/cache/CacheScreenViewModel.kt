@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.epam.listento.R
 import com.epam.listento.db.TracksDao
+import com.epam.listento.domain.DomainTrack
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.toMetadata
@@ -21,8 +22,8 @@ import javax.inject.Provider
 
 class CacheScreenViewModel @Inject constructor(
     private val musicRepo: MusicRepository,
-    dao: TracksDao,
-    mappers: PlatformMappers
+    private val mappers: PlatformMappers,
+    dao: TracksDao
 ) : ViewModel() {
 
     private val _currentPlaying = MutableLiveData<Track>()
@@ -34,22 +35,13 @@ class CacheScreenViewModel @Inject constructor(
     private val _navigationAction: MutableLiveData<Command> = SingleLiveEvent()
     val navigationActions: LiveData<Command> get() = _navigationAction
 
-    val cachedTracks: LiveData<List<Track>> =
+    private val _cachedTracks: MutableLiveData<List<Track>> =
         Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
             MutableLiveData<List<Track>>().apply {
-                value = if (domain.isNullOrEmpty()) {
-                    emptyList()
-                } else {
-                    domain.mapNotNull {
-                        val track = mappers.mapTrack(it)
-                        if (track == currentPlaying.value) {
-                            track?.res = getPlaybackRes()
-                        }
-                        track
-                    }
-                }
+                value = mapTracksToPlatform(domain)
             }
-        }
+        } as MutableLiveData
+    val cachedTracks: LiveData<List<Track>> get() = _cachedTracks
 
     fun handleItemClick(track: Track) {
         val current = currentPlaying.value
@@ -79,7 +71,7 @@ class CacheScreenViewModel @Inject constructor(
 
     fun handleMetadataChange(trackId: Int) {
         viewModelScope.launch {
-            _currentPlaying.value = cachedTracks.value?.find { it.id == trackId } ?: return@launch
+            _currentPlaying.value = _cachedTracks.value?.find { it.id == trackId } ?: return@launch
         }
     }
 
@@ -92,22 +84,21 @@ class CacheScreenViewModel @Inject constructor(
         }
     }
 
-    fun handlePlayerStateChange(trackId: Int) {
+    fun handlePlayerStateChange(trackId: Int = -1) {
         viewModelScope.launch {
             val newRes = getPlaybackRes()
 
-            val result = cachedTracks.value?.map { track ->
+            val result = _cachedTracks.value?.map { track ->
                 val resId = if (track.id == trackId) newRes else Track.NO_RES
                 track.copy(res = resId)
             }
-            cachedTracks as MutableLiveData // TODO refactor
-            cachedTracks.postValue(result)
+            _cachedTracks.postValue(result)
         }
     }
 
     fun changePlaylistAndSetCurrent(track: Track) {
         viewModelScope.launch {
-            cachedTracks.value?.map { it.toMetadata() }?.let { metadata ->
+            _cachedTracks.value?.map { it.toMetadata() }?.let { metadata ->
                 musicRepo.setSource(metadata)
                 musicRepo.setCurrent(track.toMetadata())
             }
@@ -119,6 +110,20 @@ class CacheScreenViewModel @Inject constructor(
             PlaybackState.Playing -> R.drawable.exo_icon_pause
             PlaybackState.Paused -> R.drawable.exo_icon_play
             else -> Track.NO_RES
+        }
+    }
+
+    private fun mapTracksToPlatform(tracks: List<DomainTrack?>): List<Track> {
+        return if (tracks.isNullOrEmpty()) {
+            emptyList()
+        } else {
+            tracks.mapNotNull {
+                val track = mappers.mapTrack(it)
+                if (track == currentPlaying.value) {
+                    track?.res = getPlaybackRes()
+                }
+                track
+            }
         }
     }
 

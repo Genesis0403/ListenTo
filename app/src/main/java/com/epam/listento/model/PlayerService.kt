@@ -24,6 +24,7 @@ import com.epam.listento.model.player.NotificationBuilder
 import com.epam.listento.model.player.STOP_ACTION
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.ui.MainActivity
+import com.epam.listento.utils.AppDispatchers
 import com.google.android.exoplayer2.C
 import com.google.android.exoplayer2.ExoPlayer
 import com.google.android.exoplayer2.Player
@@ -33,9 +34,11 @@ import javax.inject.Inject
 
 class PlayerService : Service() {
 
-    private val activityIntent by lazy { Intent(applicationContext, MainActivity::class.java) }
+    private val activityIntent by lazy(LazyThreadSafetyMode.NONE) {
+        Intent(applicationContext, MainActivity::class.java)
+    }
 
-    private val notificationManager by lazy {
+    private val notificationManager by lazy(LazyThreadSafetyMode.NONE) {
         getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
     }
 
@@ -78,6 +81,9 @@ class PlayerService : Service() {
 
     @Inject
     lateinit var player: SimpleExoPlayer
+
+    @Inject
+    lateinit var dispatchers: AppDispatchers
 
     private lateinit var stateBuilder: PlaybackStateCompat.Builder
     private lateinit var mediaSession: MediaSessionCompat
@@ -124,6 +130,7 @@ class PlayerService : Service() {
         mediaSession = initMediaSession()
 
         mediaSessionCallback = MediaSessionCallback(
+            dispatchers,
             this,
             musicRepo,
             downloadInteractor,

@@ -6,18 +6,22 @@ import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewModelScope
 import com.epam.listento.R
 import com.epam.listento.model.CacheInteractor
 import com.epam.listento.model.DownloadInteractor
 import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.ContextProvider
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Provider
 
 class MainViewModel @Inject constructor(
     private val contextProvider: ContextProvider,
     private val cacheInteractor: CacheInteractor,
-    private val downloadInteractor: DownloadInteractor
+    private val downloadInteractor: DownloadInteractor,
+    private val dispatchers: AppDispatchers
 ) : ViewModel() {
 
     private val _nightMode: MutableLiveData<Int> = MutableLiveData()
@@ -34,7 +38,10 @@ class MainViewModel @Inject constructor(
     }
 
     fun cacheTrack(id: Int, title: String, artist: String) {
-        downloadInteractor.downloadTrack(id, title, artist) { response ->
+        viewModelScope.launch {
+            val response = withContext(dispatchers.io) {
+                downloadInteractor.downloadTrack(id, title, artist)
+            }
             val context = contextProvider.context()
             val message = if (response.status.isSuccess()) {
                 context.getString(R.string.success_caching)
@@ -46,7 +53,9 @@ class MainViewModel @Inject constructor(
     }
 
     fun uncacheTrack(id: Int, title: String, artist: String) {
-        cacheInteractor.uncacheTrack(id)
+        viewModelScope.launch(dispatchers.io) {
+            cacheInteractor.uncacheTrack(id)
+        }
     }
 
     class Factory @Inject constructor(

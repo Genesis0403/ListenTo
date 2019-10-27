@@ -4,5 +4,5 @@ import com.epam.listento.api.ApiResponse
 import com.epam.listento.domain.DomainStorage
 
 interface StorageRepository {
-    suspend fun fetchStorage(storageDir: String, completion: suspend (ApiResponse<DomainStorage>) -> Unit)
+    suspend fun fetchStorage(storageDir: String): ApiResponse<DomainStorage>
 }

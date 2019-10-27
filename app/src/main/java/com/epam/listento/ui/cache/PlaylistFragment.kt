@@ -24,6 +24,7 @@ import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
+import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.player.utils.id
 import com.epam.listento.ui.TracksAdapter
 import com.epam.listento.ui.dialogs.TrackDialogDirections
@@ -142,6 +143,13 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
                         }
                     }
                 })
+
+            playbackState.observe(
+                viewLifecycleOwner,
+                Observer<PlaybackState> {
+                    handlePlayerStateChange(currentPlaying.value?.id ?: -1)
+                }
+            )
         }
     }
 
@@ -184,6 +192,7 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
 
         override fun onSessionDestroyed() {
             super.onSessionDestroyed()
+            cacheViewModel.handlePlayerStateChange()
             controller?.unregisterCallback(this)
         }
     }

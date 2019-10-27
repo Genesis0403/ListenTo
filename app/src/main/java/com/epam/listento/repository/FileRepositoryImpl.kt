@@ -1,14 +1,14 @@
 package com.epam.listento.repository
 
-import android.net.Uri
 import android.os.Environment
 import android.util.Log
+import androidx.annotation.WorkerThread
 import com.epam.listento.R
+import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.YandexService
 import com.epam.listento.repository.global.FileRepository
 import com.epam.listento.utils.ContextProvider
 import okhttp3.ResponseBody
-import retrofit2.Response
 import java.io.File
 import java.io.FileOutputStream
 import javax.inject.Inject
@@ -20,27 +20,27 @@ class FileRepositoryImpl @Inject constructor(
     private val contextProvider: ContextProvider
 ) : FileRepository {
 
+    @WorkerThread
     override suspend fun downloadTrack(
         trackName: String,
-        audioUrl: String,
-        completion: suspend (Response<Uri>) -> Unit
-    ) {
-        try {
+        audioUrl: String
+    ): ApiResponse<String> {
+        return try {
             val response = service.downloadTrack(audioUrl)
-            if (response.isSuccessful) {
-                val url = response.body()?.let {
-                    downloadFile(trackName, it)
-                }
-                completion(Response.success(url))
+            if (response.isSuccessful && response.body() != null) {
+                val url = downloadFile(trackName, response.body()!!)
+                ApiResponse.success(url)
             } else {
-                completion(Response.error(response.code(), response.errorBody()))
+                ApiResponse.error(response.errorBody().toString())
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             Log.e(TAG, "$e")
+            ApiResponse.error(e, e.message)
         }
     }
 
-    private fun downloadFile(trackName: String, response: ResponseBody): Uri {
+    @WorkerThread
+    private fun downloadFile(trackName: String, response: ResponseBody): String {
         val file = createFile(trackName)
         try {
             val fileReader = ByteArray(4096)
@@ -59,7 +59,7 @@ class FileRepositoryImpl @Inject constructor(
         } catch (e: Exception) {
             Log.e(TAG, "$e")
         }
-        return Uri.fromFile(file)
+        return file.path
     }
 
     private fun createFile(trackName: String): File {
