@@ -13,7 +13,6 @@ import com.epam.listento.utils.MusicMapper
 import com.epam.listento.utils.PlatformMappers
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import retrofit2.Response
 import javax.inject.Inject
 
 class TracksRepositoryImpl @Inject constructor(
@@ -36,21 +35,19 @@ class TracksRepositoryImpl @Inject constructor(
         }
     }
 
-    override suspend fun fetchTracks(
-        text: String,
-        completion: suspend (ApiResponse<List<DomainTrack>>) -> Unit
-    ) {
-        try {
+    override suspend fun fetchTracks(text: String): ApiResponse<List<DomainTrack>> {
+        return try {
             val request = service.searchTracks(text)
-            val response = if (request.isSuccessful) {
-                ApiResponse.success(request.body()?.tracks?.items?.map { domainMappers.trackToDomain(it) })
+            if (request.isSuccessful) {
+                ApiResponse.success(request.body()?.tracks?.items?.map {
+                    domainMappers.trackToDomain(it)
+                })
             } else {
                 ApiResponse.error(request.message(), emptyList())
             }
-            completion(response)
         } catch (e: Exception) {
             Log.e(TAG, "$e")
-            completion(ApiResponse.error(e))
+            ApiResponse.error(e)
         }
     }
 

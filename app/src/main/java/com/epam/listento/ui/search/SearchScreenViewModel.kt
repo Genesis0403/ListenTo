@@ -10,19 +10,23 @@ import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.Status
 import com.epam.listento.api.mapTrack
+import com.epam.listento.domain.DomainTrack
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.repository.global.TracksRepository
+import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 import javax.inject.Provider
 
 class SearchScreenViewModel @Inject constructor(
     private val tracksRepo: TracksRepository,
-    private val musicRepo: MusicRepository
+    private val musicRepo: MusicRepository,
+    private val dispatchers: AppDispatchers
 ) : ViewModel() {
 
     private val _tracks: MutableLiveData<ApiResponse<List<Track>>> = MutableLiveData()
@@ -34,63 +38,59 @@ class SearchScreenViewModel @Inject constructor(
     private val _playbackState: MutableLiveData<PlaybackState> = MutableLiveData()
     val playbackState: LiveData<PlaybackState> get() = _playbackState
 
-    private val _navigationAction: MutableLiveData<NavigationAction> = SingleLiveEvent()
-    val navigationActions: LiveData<NavigationAction> get() = _navigationAction
+    private val _command: MutableLiveData<Command> = SingleLiveEvent()
+    val command: LiveData<Command> get() = _command
 
     fun fetchTracks(query: String) {
-        viewModelScope.launch {
-            tracksRepo.fetchTracks(query) { response ->
-                if (response.status == Status.SUCCESS) {
-                    val items = response.body
-                        ?.asSequence()
-                        ?.map { mapTrack(it) }
-                        ?.filterNotNull()
-                        ?.toList()
-                    _tracks.postValue(ApiResponse.success(items))
-                } else {
-                    _tracks.postValue(ApiResponse.error(response.error))
-                }
+        viewModelScope.launch(dispatchers.default) {
+            tracksRepo.fetchTracks(query).also {
+                mapTracksAndPublish(it)
             }
         }
     }
 
     fun handleItemClick(track: Track) {
-        val current = currentPlaying.value
-        val state = playbackState.value
-        _navigationAction.value = if (state != PlaybackState.Stopped &&
-            state != PlaybackState.Paused &&
-            current?.id == track.id
-        ) {
-            NavigationAction.PlayerActivity
-        } else {
-            NavigationAction.ShouldChangePlaylist(
-                track
-            )
+        viewModelScope.launch(dispatchers.ui) {
+            val current = currentPlaying.value
+            val state = playbackState.value
+            _command.value = if (state != PlaybackState.Stopped &&
+                state != PlaybackState.Paused &&
+                current?.id == track.id
+            ) {
+                Command.ShowPlayerActivity
+            } else {
+                changePlaylistAndSetCurrent(track)
+                Command.PlayTrack
+            }
         }
     }
 
     fun handleLongItemClick(track: Track) {
         val artist = track.artist?.name ?: ""
-        _navigationAction.value =
-            NavigationAction.NeedCacheDialog(
+        _command.value =
+            Command.ShowCacheDialog(
                 track.id,
                 track.title,
                 artist
             )
     }
 
-    fun changePlaylistAndSetCurrent(track: Track) {
-        viewModelScope.launch {
+    private suspend fun changePlaylistAndSetCurrent(track: Track) {
+        withContext(dispatchers.default) {
             tracks.value?.body?.map { it.toMetadata() }?.let { metadata ->
-                musicRepo.setSource(metadata)
-                musicRepo.setCurrent(track.toMetadata())
+                withContext(dispatchers.ui) {
+                    musicRepo.setSource(metadata)
+                    musicRepo.setCurrent(track.toMetadata())
+                }
             }
         }
     }
 
     fun handleMetadataChange(trackId: Int) {
-        viewModelScope.launch {
-            _currentPlaying.value = _tracks.value?.body?.find { it.id == trackId } ?: return@launch
+        viewModelScope.launch(dispatchers.ui) {
+            _currentPlaying.value = withContext(dispatchers.default) {
+                tracks.value?.body?.find { it.id == trackId }
+            } ?: return@launch
         }
     }
 
@@ -104,7 +104,7 @@ class SearchScreenViewModel @Inject constructor(
     }
 
     fun handlePlayerStateChange(trackId: Int) {
-        viewModelScope.launch {
+        viewModelScope.launch(dispatchers.default) {
             val newRes = when (playbackState.value) {
                 PlaybackState.Playing -> R.drawable.exo_icon_pause
                 PlaybackState.Paused -> R.drawable.exo_icon_play
@@ -119,14 +119,28 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
-    sealed class NavigationAction {
-        object PlayerActivity : NavigationAction()
-        data class ShouldChangePlaylist(val track: Track) : NavigationAction()
-        data class NeedCacheDialog(
+    private fun mapTracksAndPublish(response: ApiResponse<List<DomainTrack>>) {
+        val result = if (response.status == Status.SUCCESS) {
+            val items = response.body?.run {
+                asSequence()
+                    .mapNotNull { mapTrack(it) }
+                    .toList()
+            }
+            ApiResponse.success(items)
+        } else {
+            ApiResponse.error(response.error)
+        }
+        _tracks.postValue(result)
+    }
+
+    sealed class Command {
+        object ShowPlayerActivity : Command()
+        object PlayTrack : Command()
+        class ShowCacheDialog(
             val id: Int,
             val title: String,
             val artist: String
-        ) : NavigationAction()
+        ) : Command()
     }
 
     class Factory @Inject constructor(

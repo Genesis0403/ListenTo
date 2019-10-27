@@ -139,18 +139,17 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
                 searchScreenViewModel.handlePlayerStateChange(it.id)
             })
 
-            navigationActions.observe(
+            command.observe(
                 viewLifecycleOwner,
-                Observer<SearchScreenViewModel.NavigationAction> { action ->
+                Observer<SearchScreenViewModel.Command> { action ->
                     when (action) {
-                        SearchScreenViewModel.NavigationAction.PlayerActivity -> {
+                        SearchScreenViewModel.Command.ShowPlayerActivity -> {
                             navController.navigate(R.id.playerActivity)
                         }
-                        is SearchScreenViewModel.NavigationAction.ShouldChangePlaylist -> {
-                            searchScreenViewModel.changePlaylistAndSetCurrent(action.track)
+                        is SearchScreenViewModel.Command.PlayTrack -> {
                             controller?.transportControls?.play()
                         }
-                        is SearchScreenViewModel.NavigationAction.NeedCacheDialog -> {
+                        is SearchScreenViewModel.Command.ShowCacheDialog -> {
                             val actionId = TrackDialogDirections.actionTrackDialog(
                                 action.id,
                                 action.title,

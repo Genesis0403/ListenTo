@@ -24,6 +24,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
+/**
+ * TODO refactor this something...
+ */
 class DownloadInteractor @Inject constructor(
     private val contextProvider: ContextProvider,
     private val audioRepo: AudioRepository,
@@ -32,12 +35,6 @@ class DownloadInteractor @Inject constructor(
     private val trackRepo: TrackRepository,
     private val cacheInteractor: CacheInteractor
 ) {
-
-    private companion object {
-        private const val FAILED_TO_LOAD_TRACK = "Failed to load track"
-        private const val WIDTH = 320
-        private const val HEIGHT = 320
-    }
 
     private val metadataBuilder = MediaMetadataCompat.Builder()
     private var fetchJob: Job? = null
@@ -169,5 +166,10 @@ class DownloadInteractor @Inject constructor(
             .error(R.drawable.no_photo_24dp)
             .submit(WIDTH, HEIGHT)
             .get() // TODO add connectivity manager and load drawable instead image
+    }
+
+    private companion object {
+        private const val WIDTH = 320
+        private const val HEIGHT = 320
     }
 }

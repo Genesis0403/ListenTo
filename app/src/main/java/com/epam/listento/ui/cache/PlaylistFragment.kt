@@ -122,16 +122,16 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
 
             navigationActions.observe(
                 viewLifecycleOwner,
-                Observer<CacheScreenViewModel.NavigationAction> { action ->
+                Observer<CacheScreenViewModel.Command> { action ->
                     when (action) {
-                        CacheScreenViewModel.NavigationAction.PlayerActivity -> {
+                        CacheScreenViewModel.Command.ShowPlayerActivity -> {
                             navController.navigate(R.id.playerActivity)
                         }
-                        is CacheScreenViewModel.NavigationAction.ShouldChangePlaylist -> {
+                        is CacheScreenViewModel.Command.ChangePlaylist -> {
                             cacheViewModel.changePlaylistAndSetCurrent(action.track)
                             controller?.transportControls?.play()
                         }
-                        is CacheScreenViewModel.NavigationAction.NeedCacheDialog -> {
+                        is CacheScreenViewModel.Command.ShowCacheDialog -> {
                             val actionId =
                                 TrackDialogDirections.actionTrackDialog(
                                     action.id,

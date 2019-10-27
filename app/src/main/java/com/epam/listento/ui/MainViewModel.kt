@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import com.epam.listento.R
 import com.epam.listento.model.CacheInteractor
 import com.epam.listento.model.DownloadInteractor
+import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.ContextProvider
 import javax.inject.Inject
 import javax.inject.Provider

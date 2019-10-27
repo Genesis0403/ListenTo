@@ -31,8 +31,8 @@ class CacheScreenViewModel @Inject constructor(
     private val _playbackState = MutableLiveData<PlaybackState>()
     val playbackState: LiveData<PlaybackState> get() = _playbackState
 
-    private val _navigationAction: MutableLiveData<NavigationAction> = SingleLiveEvent()
-    val navigationActions: LiveData<NavigationAction> get() = _navigationAction
+    private val _navigationAction: MutableLiveData<Command> = SingleLiveEvent()
+    val navigationActions: LiveData<Command> get() = _navigationAction
 
     val cachedTracks: LiveData<List<Track>> =
         Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
@@ -58,9 +58,9 @@ class CacheScreenViewModel @Inject constructor(
             state != PlaybackState.Paused &&
             current?.id == track.id
         ) {
-            NavigationAction.PlayerActivity
+            Command.ShowPlayerActivity
         } else {
-            NavigationAction.ShouldChangePlaylist(
+            Command.ChangePlaylist(
                 track
             )
         }
@@ -70,7 +70,7 @@ class CacheScreenViewModel @Inject constructor(
         // TODO create playlist on long click and add dots menu for cache actions
         val artist = track.artist?.name ?: ""
         _navigationAction.value =
-            NavigationAction.NeedCacheDialog(
+            Command.ShowCacheDialog(
                 track.id,
                 track.title,
                 artist
@@ -122,14 +122,14 @@ class CacheScreenViewModel @Inject constructor(
         }
     }
 
-    sealed class NavigationAction {
-        object PlayerActivity : NavigationAction()
-        data class ShouldChangePlaylist(val track: Track) : NavigationAction()
-        data class NeedCacheDialog(
+    sealed class Command {
+        object ShowPlayerActivity : Command()
+        class ChangePlaylist(val track: Track) : Command()
+        class ShowCacheDialog(
             val id: Int,
             val title: String,
             val artist: String
-        ) : NavigationAction()
+        ) : Command()
     }
 
     class Factory @Inject constructor(
