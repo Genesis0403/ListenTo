@@ -24,7 +24,7 @@ import org.spekframework.spek2.style.specification.describe
 import kotlin.test.assertTrue
 
 @RunWith(JUnitPlatform::class)
-class CacheScreenViewModelSpek : Spek({
+object CacheScreenViewModelSpek : Spek({
 
     emulateInstanteTaskExecutorRule()
 
@@ -33,7 +33,6 @@ class CacheScreenViewModelSpek : Spek({
     val dao: TracksDao = mockk(relaxed = true)
     val dispatchers: AppDispatchers = mockk(relaxed = true)
 
-    var tracksObserver: Observer<List<Track>> = mockk(relaxed = true)
     var stateObserver: Observer<PlaybackState> = mockk(relaxed = true)
     var commandObserver: Observer<CacheScreenViewModel.Command> = mockk(relaxed = true)
     var currentObserver: Observer<Track> = mockk(relaxed = true)

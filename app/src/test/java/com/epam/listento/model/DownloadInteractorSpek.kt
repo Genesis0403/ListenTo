@@ -23,9 +23,8 @@ import org.spekframework.spek2.style.specification.describe
 import kotlin.test.assertTrue
 
 @RunWith(JUnitPlatform::class)
-class DownloadInteractorSpek : Spek({
+object DownloadInteractorSpek : Spek({
 
-    val dispatchers: AppDispatchers = mockk(relaxed = true)
     val contextProvider: ContextProvider = mockk(relaxed = true)
     val audioRepo: AudioRepository = mockk(relaxed = true)
     val storageRepo: StorageRepository = mockk(relaxed = true)
