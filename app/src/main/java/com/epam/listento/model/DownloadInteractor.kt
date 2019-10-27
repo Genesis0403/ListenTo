@@ -20,9 +20,6 @@ import com.epam.listento.repository.global.TrackRepository
 import com.epam.listento.utils.ContextProvider
 import javax.inject.Inject
 
-/**
- * TODO refactor this something...
- */
 class DownloadInteractor @Inject constructor(
     private val contextProvider: ContextProvider,
     private val audioRepo: AudioRepository,

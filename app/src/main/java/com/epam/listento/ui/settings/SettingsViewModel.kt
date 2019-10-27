@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.epam.listento.model.CacheInteractor
-import com.epam.listento.model.DownloadInteractor
 import com.epam.listento.utils.AppDispatchers
 import kotlinx.coroutines.launch
 import javax.inject.Inject

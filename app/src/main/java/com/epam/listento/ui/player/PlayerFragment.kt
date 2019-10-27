@@ -40,7 +40,7 @@ import javax.inject.Inject
 
 class PlayerFragment : Fragment() {
 
-    //TODO pass current playing track via bundle
+    // TODO pass current playing track via bundle
     private val playerViewModel: PlayerViewModel by viewModels {
         factory
     }

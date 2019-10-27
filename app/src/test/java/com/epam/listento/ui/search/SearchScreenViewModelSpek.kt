@@ -2,7 +2,6 @@ package com.epam.listento.ui.search
 
 import android.support.v4.media.session.PlaybackStateCompat
 import androidx.lifecycle.Observer
-import com.epam.listento.R
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.Status
 import com.epam.listento.domain.DomainTrack
