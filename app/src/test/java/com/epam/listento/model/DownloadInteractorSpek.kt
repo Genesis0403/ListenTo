@@ -8,7 +8,6 @@ import com.epam.listento.repository.global.AudioRepository
 import com.epam.listento.repository.global.FileRepository
 import com.epam.listento.repository.global.StorageRepository
 import com.epam.listento.repository.global.TrackRepository
-import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.ContextProvider
 import io.mockk.clearAllMocks
 import io.mockk.coEvery
@@ -110,11 +109,25 @@ object DownloadInteractorSpek : Spek({
             }
         }
 
-        it("should throw error after fetching") {
+        it("should throw error after fetching when status is error") {
             every { trackRepo.checkTrackExistence(trackName) } returns false
 
             coEvery { trackRepo.fetchTrack(id, true) } returns trackResponse
             every { trackResponse.status } returns Status.ERROR
+            every { trackResponse.body } returns domainTrack
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+
+        it("should throw error after fetching when body is null") {
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { trackRepo.fetchTrack(id, true) } returns trackResponse
+            every { trackResponse.status } returns Status.SUCCESS
             every { trackResponse.body } returns null
 
             runBlocking {
@@ -124,7 +137,7 @@ object DownloadInteractorSpek : Spek({
             }
         }
 
-        it("should throw error after storage fetching") {
+        it("should throw error after storage fetching when status is error") {
 
             val storage = "some_storage"
 
@@ -146,12 +159,49 @@ object DownloadInteractorSpek : Spek({
             }
         }
 
-        it("should throw error after downloading") {
+        it("should throw error after storage fetching when body is null") {
+
+            val storage = "some_storage"
+
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { trackRepo.fetchTrack(id, true) } returns trackResponse
+            every { trackResponse.status } returns Status.SUCCESS
+            every { trackResponse.body } returns domainTrack
+            every { trackResponse.body?.storageDir } returns storage
+
+            coEvery { storageRepo.fetchStorage(storage) } returns storageResponse
+            every { storageResponse.status } returns Status.SUCCESS
+            every { storageResponse.body } returns null
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+
+        it("should throw error after downloading when status is error") {
 
             every { trackRepo.checkTrackExistence(trackName) } returns false
 
             coEvery { interactor["fetchTrack"](id, true) } returns fileResponse
             every { fileResponse.status } returns Status.ERROR
+            every { fileResponse.body } returns null
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+
+        it("should throw error after downloading when body is null") {
+
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { interactor["fetchTrack"](id, true) } returns fileResponse
+            every { fileResponse.status } returns Status.SUCCESS
             every { fileResponse.body } returns null
 
             runBlocking {

@@ -76,7 +76,7 @@ object MainViewModelSpek : Spek({
             verify { nightObserver.onChanged(AppCompatDelegate.MODE_NIGHT_YES) }
         }
 
-        it("night mode should not be enbled") {
+        it("night mode should not be enabled") {
             viewModel.handleThemeChange(false, nightModeKey)
             verify { nightObserver.onChanged(AppCompatDelegate.MODE_NIGHT_NO) }
         }

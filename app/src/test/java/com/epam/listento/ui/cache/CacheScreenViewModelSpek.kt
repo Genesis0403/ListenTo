@@ -8,6 +8,7 @@ import com.epam.listento.model.Artist
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.repository.global.MusicRepository
+import com.epam.listento.ui.search.SearchScreenViewModel
 import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.PlatformMappers
 import com.epam.listento.utils.emulateInstanteTaskExecutorRule
@@ -82,6 +83,17 @@ object CacheScreenViewModelSpek : Spek({
 
     describe("item click") {
 
+        val fakeId = 2
+        val track = Track(
+            fakeId,
+            mockedDuration,
+            mockedTitle,
+            artist,
+            mockedStorage,
+            album,
+            mockedResId
+        )
+
         beforeEachTest {
             createViewModel()
             commandObserver = mockk(relaxed = true)
@@ -102,16 +114,26 @@ object CacheScreenViewModelSpek : Spek({
         }
 
         it("should change playlist") {
-            val id = 2
-            val track = Track(
-                id,
-                mockedDuration,
-                mockedTitle,
-                artist,
-                mockedStorage,
-                album,
-                mockedResId
-            )
+            viewModel.handleItemClick(track)
+            verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
+        }
+
+        it("should play track when ids are not equals") {
+            every { viewModel.playbackState.value } returns PlaybackState.Playing
+            viewModel.handleItemClick(track)
+            verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
+        }
+
+        it("should play track when state is stopped") {
+            every { currentTrack.id } returns fakeId
+            every { viewModel.playbackState.value } returns PlaybackState.Stopped
+            viewModel.handleItemClick(track)
+            verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
+        }
+
+        it("should play track when state is paused") {
+            every { currentTrack.id } returns fakeId
+            every { viewModel.playbackState.value } returns PlaybackState.Paused
             viewModel.handleItemClick(track)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }

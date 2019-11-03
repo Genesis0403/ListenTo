@@ -42,10 +42,14 @@ class SearchScreenViewModel @Inject constructor(
     val command: LiveData<Command> get() = _command
 
     fun fetchTracks(query: String) {
-        viewModelScope.launch(dispatchers.default) {
-            tracksRepo.fetchTracks(query).also {
-                mapTracksAndPublish(it)
+        if (query.isNotEmpty() && query.length <= QUERY_LENGTH_MAX) {
+            viewModelScope.launch(dispatchers.default) {
+                tracksRepo.fetchTracks(query).also {
+                    mapTracksAndPublish(it)
+                }
             }
+        } else {
+            _command.value = Command.StopLoading
         }
     }
 
@@ -136,6 +140,7 @@ class SearchScreenViewModel @Inject constructor(
     sealed class Command {
         object ShowPlayerActivity : Command()
         object PlayTrack : Command()
+        object StopLoading : Command()
         class ShowCacheDialog(
             val id: Int,
             val title: String,
@@ -151,5 +156,9 @@ class SearchScreenViewModel @Inject constructor(
         override fun <T : ViewModel?> create(modelClass: Class<T>): T {
             return provider.get() as T
         }
+    }
+
+    private companion object {
+        private const val QUERY_LENGTH_MAX = 30
     }
 }

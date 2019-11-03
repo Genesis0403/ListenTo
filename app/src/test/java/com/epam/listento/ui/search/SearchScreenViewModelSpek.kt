@@ -35,13 +35,13 @@ object SearchScreenViewModelSpek : Spek({
     val tracksRepo: TracksRepository = mockk(relaxed = true)
     val dispatchers: AppDispatchers = mockk(relaxed = true)
 
-    var navObserver: Observer<SearchScreenViewModel.Command> = mockk(relaxed = true)
+    var commandObserver: Observer<SearchScreenViewModel.Command> = mockk(relaxed = true)
     var currentObserver: Observer<Track> = mockk(relaxed = true)
     var stateObserver: Observer<PlaybackState> = mockk(relaxed = true)
     var tracksObserver: Observer<ApiResponse<List<Track>>> = mockk(relaxed = true)
 
     val currentTrack: Track = mockk(relaxed = true)
-    val artist: Artist = mockk(relaxed = true)
+    val artist: Artist? = mockk(relaxed = true)
     val album: Album = mockk(relaxed = true)
 
     lateinit var viewModel: SearchScreenViewModel
@@ -84,6 +84,7 @@ object SearchScreenViewModelSpek : Spek({
 
     describe("tracks fetching") {
 
+        val mockedQury30 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         val mockedQuery = "some_track"
         val mockedError = "some_error"
         var mockedFetchResponse: ApiResponse<List<DomainTrack>> = mockk(relaxed = true)
@@ -93,13 +94,25 @@ object SearchScreenViewModelSpek : Spek({
             tracksObserver = mockk(relaxed = true)
             mockedFetchResponse = mockk(relaxed = true)
             viewModel.tracks.observeForever(tracksObserver)
+            viewModel.command.observeForever(commandObserver)
 
             coEvery { tracksRepo.fetchTracks(mockedQuery) } returns mockedFetchResponse
         }
 
         afterEachTest {
             viewModel.tracks.removeObserver(tracksObserver)
-            clearMocks(tracksObserver, tracksRepo, mockedFetchResponse)
+            viewModel.command.removeObserver(commandObserver)
+            clearMocks(tracksObserver, commandObserver, tracksRepo, mockedFetchResponse)
+        }
+
+        it("should prevent loading when query is empty") {
+            viewModel.fetchTracks("")
+            verify { commandObserver.onChanged(SearchScreenViewModel.Command.StopLoading) }
+        }
+
+        it("should prevent loading when query's length more then 30") {
+            viewModel.fetchTracks(mockedQury30)
+            verify { commandObserver.onChanged(SearchScreenViewModel.Command.StopLoading) }
         }
 
         it("should fetch successfully") {
@@ -123,38 +136,53 @@ object SearchScreenViewModelSpek : Spek({
 
     describe("item click") {
 
+        val fakeId = 2
+        val track = Track(
+            fakeId,
+            mockedDuration,
+            mockedTitle,
+            artist,
+            mockedStorage,
+            album,
+            mockedResId
+        )
+
         beforeEachTest {
             createViewModel()
-            navObserver = mockk(relaxed = true)
-            viewModel.command.observeForever(navObserver)
-            every { viewModel.playbackState.value } returns PlaybackState.Playing
+            commandObserver = mockk(relaxed = true)
+            viewModel.command.observeForever(commandObserver)
             every { viewModel.currentPlaying.value } returns currentTrack
             every { currentTrack.id } returns mockedId
         }
 
         afterEachTest {
-            viewModel.command.removeObserver(navObserver)
-            clearMocks(navObserver)
+            viewModel.command.removeObserver(commandObserver)
+            clearMocks(commandObserver)
         }
 
-        it("should navigate to player") {
+        it("should navigate to player when state is plying and id equals") {
             viewModel.handleItemClick(mockedTrack)
-            verify { navObserver.onChanged(SearchScreenViewModel.Command.ShowPlayerActivity) }
+            verify { commandObserver.onChanged(SearchScreenViewModel.Command.ShowPlayerActivity) }
         }
 
-        it("should play track") {
-            val id = 2
-            val track = Track(
-                id,
-                mockedDuration,
-                mockedTitle,
-                artist,
-                mockedStorage,
-                album,
-                mockedResId
-            )
+        it("should play track when ids are not equals") {
+            every { viewModel.playbackState.value } returns PlaybackState.Playing
             viewModel.handleItemClick(track)
-            verify { navObserver.onChanged(SearchScreenViewModel.Command.PlayTrack) }
+            verify { commandObserver.onChanged(SearchScreenViewModel.Command.PlayTrack) }
+        }
+
+        it("should play track when state is stopped") {
+            every { currentTrack.id } returns fakeId
+            every { viewModel.playbackState.value } returns PlaybackState.Stopped
+            viewModel.handleItemClick(track)
+            verify { commandObserver.onChanged(SearchScreenViewModel.Command.PlayTrack) }
+        }
+
+        it("should play track when state is paused") {
+            every { currentTrack.id } returns fakeId
+            every { viewModel.playbackState.value } returns PlaybackState.Paused
+            viewModel.handleItemClick(track)
+            verify { commandObserver.onChanged(SearchScreenViewModel.Command.PlayTrack) }
         }
     }
 
@@ -162,17 +190,23 @@ object SearchScreenViewModelSpek : Spek({
 
         beforeEachTest {
             createViewModel()
-            navObserver = mockk(relaxed = true)
-            viewModel.command.observeForever(navObserver)
-            every { artist.name } returns ""
+            commandObserver = mockk(relaxed = true)
+            viewModel.command.observeForever(commandObserver)
         }
 
         afterEachTest {
-            viewModel.command.removeObserver(navObserver)
-            clearMocks(navObserver)
+            viewModel.command.removeObserver(commandObserver)
+            clearMocks(commandObserver)
         }
 
-        it("should show cache dialog") {
+        it("should show cache dialog when artist's name is not null") {
+            every { artist?.name } returns ""
+            viewModel.handleLongItemClick(mockedTrack)
+            assertTrue { viewModel.command.value is SearchScreenViewModel.Command.ShowCacheDialog }
+        }
+
+        it("should show cache dialog when artist's name is null") {
+            every { artist?.name } returns null
             viewModel.handleLongItemClick(mockedTrack)
             assertTrue { viewModel.command.value is SearchScreenViewModel.Command.ShowCacheDialog }
         }

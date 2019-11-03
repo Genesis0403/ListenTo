@@ -87,7 +87,7 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        requireActivity().findViewById<Toolbar>(R.id.appToolBar)?.apply {
+        requireActivity().findViewById<Toolbar>(R.id.appToolBar).apply {
             menu.clear()
             inflateMenu(R.menu.search_toolbar_menu)
             val searchView = menu.findItem(R.id.actionSearch).actionView as SearchView
@@ -113,10 +113,8 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     private fun listenToSearchViewQuery(searchView: SearchView) {
         searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
-            if (query.isNotEmpty()) {
-                progressBar.isVisible = true
-                searchScreenViewModel.fetchTracks(query)
-            }
+            progressBar.isVisible = true
+            searchScreenViewModel.fetchTracks(query)
         })
     }
 
@@ -144,12 +142,12 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
                 viewLifecycleOwner,
                 Observer<SearchScreenViewModel.Command> { action ->
                     when (action) {
-                        SearchScreenViewModel.Command.ShowPlayerActivity -> {
+                        SearchScreenViewModel.Command.StopLoading ->
+                            progressBar.isVisible = false
+                        SearchScreenViewModel.Command.ShowPlayerActivity ->
                             navController.navigate(R.id.playerActivity)
-                        }
-                        is SearchScreenViewModel.Command.PlayTrack -> {
+                        SearchScreenViewModel.Command.PlayTrack ->
                             controller?.transportControls?.play()
-                        }
                         is SearchScreenViewModel.Command.ShowCacheDialog -> {
                             val actionId = TrackDialogDirections.actionTrackDialog(
                                 action.id,
@@ -213,5 +211,6 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
 
     companion object {
         private const val TAG = "SEARCH_FRAGMENT"
+        private const val SEARCH_QUERY_MAX = 30
     }
 }
