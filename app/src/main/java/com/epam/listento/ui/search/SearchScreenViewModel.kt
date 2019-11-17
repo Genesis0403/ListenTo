@@ -129,7 +129,7 @@ class SearchScreenViewModel @Inject constructor(
                 asSequence()
                     .mapNotNull { mapTrack(it) }
                     .toList()
-            }
+            } ?: emptyList()
             ApiResponse.success(items)
         } else {
             ApiResponse.error(response.error)

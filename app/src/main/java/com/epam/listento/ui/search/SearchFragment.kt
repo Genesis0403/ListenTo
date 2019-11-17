@@ -111,6 +111,9 @@ class SearchFragment : Fragment(), TracksAdapter.OnClickListener {
         activity?.unbindService(connection)
     }
 
+    override fun onMenuClick(track: Track) {
+    }
+
     private fun listenToSearchViewQuery(searchView: SearchView) {
         searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
             progressBar.isVisible = true

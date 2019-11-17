@@ -21,4 +21,8 @@
     <string name="failed_caching">Failed to cache</string>
     <string name="night_mode_key">night_mode</string>
     <string name="app_local_dir">ListenToMusic</string>
+    <string name="add_image">Add image</string>
+    <string name="album_title">Album title</string>
+    <string name="artist_name">Artist name</string>
+    <string name="save">Save</string>
 </resources>

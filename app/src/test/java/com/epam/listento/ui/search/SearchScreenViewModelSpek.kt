@@ -84,7 +84,9 @@ object SearchScreenViewModelSpek : Spek({
 
     describe("tracks fetching") {
 
-        val mockedQury30 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        val mockedQuery30 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        val mockedQuery31 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        val mockedQuery32 = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
         val mockedQuery = "some_track"
         val mockedError = "some_error"
         var mockedFetchResponse: ApiResponse<List<DomainTrack>> = mockk(relaxed = true)
@@ -110,18 +112,34 @@ object SearchScreenViewModelSpek : Spek({
             verify { commandObserver.onChanged(SearchScreenViewModel.Command.StopLoading) }
         }
 
+        it("should prevent loading when query's length is 31") {
+            viewModel.fetchTracks(mockedQuery31)
+            verify { commandObserver.onChanged(SearchScreenViewModel.Command.StopLoading) }
+        }
+
         it("should prevent loading when query's length more then 30") {
-            viewModel.fetchTracks(mockedQury30)
+            viewModel.fetchTracks(mockedQuery32)
             verify { commandObserver.onChanged(SearchScreenViewModel.Command.StopLoading) }
         }
 
         it("should fetch successfully") {
             every { mockedFetchResponse.status } returns Status.SUCCESS
             every { mockedFetchResponse.body } returns emptyList()
+            coEvery { tracksRepo.fetchTracks(mockedQuery) } returns mockedFetchResponse
 
             viewModel.fetchTracks(mockedQuery)
             verify { tracksObserver.onChanged(any()) }
             assertTrue { viewModel.tracks.value?.status == Status.SUCCESS }
+        }
+
+        it("should fetch successfully with query length 30") {
+            every { mockedFetchResponse.status } returns Status.SUCCESS
+            every { mockedFetchResponse.body } returns emptyList()
+            coEvery { tracksRepo.fetchTracks(mockedQuery30) } returns mockedFetchResponse
+
+            viewModel.fetchTracks(mockedQuery30)
+            assertTrue { viewModel.tracks.value?.status == Status.SUCCESS }
+            assertTrue { viewModel.tracks.value?.body.isNullOrEmpty() }
         }
 
         it("should be an error") {

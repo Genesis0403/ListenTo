@@ -27,12 +27,13 @@ import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.player.utils.id
 import com.epam.listento.ui.TracksAdapter
+import com.epam.listento.ui.dialogs.AlbumCreationDialog
 import com.epam.listento.ui.dialogs.TrackDialogDirections
 import kotlinx.android.synthetic.main.tracks_fragment.progressBar
 import kotlinx.android.synthetic.main.tracks_fragment.tracksRecyclerView
 import javax.inject.Inject
 
-class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
+class CacheFragment : Fragment(), TracksAdapter.OnClickListener {
 
     @Inject
     lateinit var cacheFactory: CacheScreenViewModel.Factory
@@ -54,7 +55,7 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
     }
 
     override fun onLongClick(track: Track) {
-        cacheViewModel.handleLongItemClick(track)
+        AlbumCreationDialog.newInstance().show(requireActivity().supportFragmentManager, null)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -106,6 +107,10 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
     override fun onDestroy() {
         super.onDestroy()
         Log.d(TAG, "DESTROYED")
+    }
+
+    override fun onMenuClick(track: Track) {
+        cacheViewModel.handleThreeDotButtonClick(track)
     }
 
     private fun initObservers() {
@@ -197,6 +202,6 @@ class PlaylistFragment : Fragment(), TracksAdapter.OnClickListener {
     }
 
     companion object {
-        private const val TAG = "PlaylistFragment"
+        private const val TAG = "CacheFragment"
     }
 }

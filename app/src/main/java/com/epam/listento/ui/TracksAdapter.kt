@@ -23,11 +23,6 @@ class TracksAdapter(
     private val listener: OnClickListener
 ) : ListAdapter<Track, TracksAdapter.TrackViewHolder>(Track.diffCallback) {
 
-    interface OnClickListener {
-        fun onClick(track: Track)
-        fun onLongClick(track: Track)
-    }
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackViewHolder {
         val view = LayoutInflater.from(parent.context).inflate(R.layout.track_item, parent, false)
         return TrackViewHolder(view, listener)
@@ -87,6 +82,7 @@ class TracksAdapter(
         val duration: TextView = view.findViewById(R.id.duration)
         val cardView: CardView = view.findViewById(R.id.cardView)
         val playbackState: ImageView = view.findViewById(R.id.playbackState)
+        val threeDotButton: ImageView = view.findViewById(R.id.threeDotButton)
 
         init {
             cardView.setOnClickListener {
@@ -105,6 +101,19 @@ class TracksAdapter(
                     false
                 }
             }
+
+            threeDotButton.setOnClickListener {
+                if (adapterPosition != RecyclerView.NO_POSITION) {
+                    val item = getItem(adapterPosition)
+                    listener.onMenuClick(item)
+                }
+            }
         }
+    }
+
+    interface OnClickListener {
+        fun onClick(track: Track)
+        fun onMenuClick(track: Track)
+        fun onLongClick(track: Track)
     }
 }

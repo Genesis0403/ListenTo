@@ -8,7 +8,6 @@ import com.epam.listento.model.Artist
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.repository.global.MusicRepository
-import com.epam.listento.ui.search.SearchScreenViewModel
 import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.PlatformMappers
 import com.epam.listento.utils.emulateInstanteTaskExecutorRule
@@ -154,7 +153,7 @@ object CacheScreenViewModelSpek : Spek({
         }
 
         it("should show cache dialog") {
-            viewModel.handleLongItemClick(mockedTrack)
+            viewModel.handleThreeDotButtonClick(mockedTrack)
             assertTrue { viewModel.command.value is CacheScreenViewModel.Command.ShowCacheDialog }
         }
     }

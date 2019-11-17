@@ -36,7 +36,7 @@ class DownloadInteractor @Inject constructor(
         track: MediaMetadataCompat,
         isCaching: Boolean
     ): ApiResponse<String> {
-        val trackName = "${track.artist}-${track.title}.mp3"
+        val trackName = "${track.artist}-${track.title}-${track.id}.mp3"
         return if (trackRepo.checkTrackExistence(trackName)) {
             val filePath = trackRepo.fetchTrackPath(trackName)
             cacheTrack(track, isCaching)
@@ -57,7 +57,7 @@ class DownloadInteractor @Inject constructor(
         title: String,
         artist: String
     ): ApiResponse<String> {
-        val trackName = "$artist-$title.mp3"
+        val trackName = "$artist-$title-$id.mp3"
         return if (trackRepo.checkTrackExistence(trackName)) {
             val trackPath = trackRepo.fetchTrackPath(trackName)
             cacheInteractor.cacheTrack(id)

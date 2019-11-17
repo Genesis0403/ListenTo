@@ -3,7 +3,8 @@ package com.epam.listento.di
 import android.app.Application
 import com.epam.listento.model.PlayerService
 import com.epam.listento.ui.MainActivity
-import com.epam.listento.ui.cache.PlaylistFragment
+import com.epam.listento.ui.cache.CacheFragment
+import com.epam.listento.ui.dialogs.AlbumCreationDialog
 import com.epam.listento.ui.dialogs.TrackDialog
 import com.epam.listento.ui.player.PlayerFragment
 import com.epam.listento.ui.search.SearchFragment
@@ -32,7 +33,8 @@ interface AppComponent {
     fun inject(fragment: SearchFragment)
     fun inject(fragment: PlayerFragment)
     fun inject(service: PlayerService)
-    fun inject(fragment: PlaylistFragment)
+    fun inject(fragment: CacheFragment)
     fun inject(fragment: TrackDialog)
     fun inject(fragment: PreferencesFragment)
+    fun inject(dialog: AlbumCreationDialog)
 }

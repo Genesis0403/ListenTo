@@ -62,8 +62,7 @@ class CacheScreenViewModel @Inject constructor(
         }
     }
 
-    fun handleLongItemClick(track: Track) {
-        // TODO create playlist on long click and add dots menu for cache actions
+    fun handleThreeDotButtonClick(track: Track) {
         val artist = track.artist?.name ?: ""
         _command.value =
             Command.ShowCacheDialog(

@@ -15,13 +15,25 @@
     </navigation>
     <navigation android:id="@+id/cacheFragment" app:startDestination="@id/cacheFragmentNav" android:label="Cache">
         <fragment android:id="@+id/cacheFragmentNav"
-                  android:name="com.epam.listento.ui.cache.PlaylistFragment"
+                  android:name="com.epam.listento.ui.cache.CacheFragment"
                   android:label="Cache"
-                  tools:layout="@layout/cache_fragment"/>
+                  tools:layout="@layout/cache_fragment">
+            <action
+                    android:id="@+id/action_cacheFragmentNav_to_albumCreationDialog"
+                    app:destination="@+id/albumCreationDialog"
+                    app:enterAnim="@anim/slide_up"
+                    app:exitAnim="@anim/slide_down"
+                    app:popEnterAnim="@anim/slide_up"
+                    app:popExitAnim="@anim/slide_down" />
+        </fragment>
         <action android:id="@+id/action_global_playerActivity32"
                 app:destination="@id/playerActivity"
                 app:enterAnim="@anim/nav_default_enter_anim" app:exitAnim="@anim/nav_default_exit_anim"/>
         <action android:id="@+id/action_global_playerActivity2" app:destination="@id/playerActivity"/>
+        <fragment
+                android:id="@+id/albumCreationDialog"
+                android:name="com.epam.listento.ui.dialogs.AlbumCreationDialog"
+                android:label="AlbumCreationDialog" />
     </navigation>
     <navigation android:id="@+id/preferencesFragment" app:startDestination="@id/prefFragment" android:label="Settings">
         <fragment

@@ -40,7 +40,7 @@ internal class DebounceSearchListener(
         }
     }
 
-    @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     private fun onDestroy() {
         job?.cancel()
     }

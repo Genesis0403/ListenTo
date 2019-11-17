@@ -7,6 +7,9 @@
     <color name="uncheckedIcon">#ACACAC</color>
     <color name="colorOnPrimary">#FFFFFF</color>
     <color name="searchIconTint">@color/colorOnPrimary</color>
+    <color name="errorColor">#B00020</color>
+
+    <color name="checkedItem">#ACACAC</color>
 
     <color name="colorOnInactive">#CCCCCC</color>
     <color name="colorOnActive">#6a5cb8</color>

@@ -11,6 +11,32 @@
         <item name="bottomNavigationStyle">@style/AppTheme.BottomNavigationView</item>
     </style>
 
+    <style name="ListenTo.TextInputLayout" parent="Widget.MaterialComponents.TextInputLayout.OutlinedBox">
+        <item name="android:layout_width">match_parent</item>
+        <item name="android:layout_height">wrap_content</item>
+        <item name="errorIconTint">@color/errorColor</item>
+        <item name="errorEnabled">true</item>
+        <item name="counterEnabled">true</item>
+        <item name="counterMaxLength">30</item>
+        <item name="android:layout_marginStart">8dp</item>
+        <item name="android:layout_marginEnd">8dp</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="boxCornerRadiusBottomEnd">8dp</item>
+        <item name="boxCornerRadiusBottomStart">8dp</item>
+        <item name="boxCornerRadiusTopEnd">8dp</item>
+        <item name="boxCornerRadiusTopStart">8dp</item>
+    </style>
+
+    <style name="ListenTo.MaterialDialog" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
+        <item name="colorAccent">@color/colorAccent</item>
+        <item name="toolbarStyle">@style/AppTheme.ToolBar</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="actionMenuTextColor">@android:color/white</item>
+    </style>
+
     <style name="AppTheme.ToolBar" parent="Widget.MaterialComponents.Toolbar.Primary">
         <item name="android:elevation">1dp</item>
         <item name="popupTheme">@style/ThemeOverlay.MaterialComponents.Light</item>
@@ -19,6 +45,11 @@
 
     <style name="AppTheme.BottomNavigationView" parent="Widget.MaterialComponents.BottomNavigationView">
         <item name="itemIconTint">@color/navigation_bar_selector</item>
+    </style>
+
+    <style name="AppTheme.SlideAnimation">
+        <item name="android:windowEnterAnimation">@anim/slide_up</item>
+        <item name="android:windowExitAnimation">@anim/slide_down</item>
     </style>
 
 </resources>
