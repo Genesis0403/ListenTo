@@ -7,6 +7,7 @@ import com.epam.listento.model.Album
 import com.epam.listento.model.Artist
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
+import com.epam.listento.repository.global.AlbumsRepository
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.PlatformMappers
@@ -29,6 +30,7 @@ object CacheScreenViewModelSpek : Spek({
     emulateInstanteTaskExecutorRule()
 
     val musicRepo: MusicRepository = mockk(relaxed = true)
+    val albumsRepo: AlbumsRepository = mockk(relaxed = true)
     val mappers: PlatformMappers = mockk(relaxed = true)
     val dao: TracksDao = mockk(relaxed = true)
     val dispatchers: AppDispatchers = mockk(relaxed = true)
@@ -63,6 +65,7 @@ object CacheScreenViewModelSpek : Spek({
         viewModel = spyk(
             CacheScreenViewModel(
                 musicRepo,
+                albumsRepo,
                 mappers,
                 dispatchers,
                 dao

@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.room.Room
 import com.epam.listento.R
 import com.epam.listento.db.AppDatabase
+import com.epam.listento.db.CustomAlbumsDao
 import com.epam.listento.db.TracksDao
 import dagger.Module
 import dagger.Provides
@@ -28,5 +29,11 @@ class DbModule {
     @Provides
     fun provideTracksDao(db: AppDatabase): TracksDao {
         return db.tracksDao()
+    }
+
+    @Singleton
+    @Provides
+    fun provideCustomAlbumsDao(db: AppDatabase): CustomAlbumsDao {
+        return db.customAlbumsDao()
     }
 }

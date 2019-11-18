@@ -25,4 +25,9 @@
     <string name="album_title">Album title</string>
     <string name="artist_name">Artist name</string>
     <string name="save">Save</string>
+    <string name="incorrect_length_toast">Incorrect length of text fields must be: 3-30</string>
+    <string name="failed_to_get_image">Failed to get image from gallery</string>
+    <string name="track_is_in_list">Track is already in list.</string>
+    <string name="albums">Albums</string>
+    <string name="tracks">Tracks</string>
 </resources>

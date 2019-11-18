@@ -1,6 +1,7 @@
 package com.epam.listento.model
 
 import android.os.Environment
+import android.util.Log
 import androidx.annotation.WorkerThread
 import com.epam.listento.R
 import com.epam.listento.db.AppDatabase
@@ -29,9 +30,10 @@ class CacheInteractor @Inject constructor(
     }
 
     @WorkerThread
-    fun uncacheTrack(id: Int) {
+    fun uncacheTrack(id: Int, title: String, artist: String) {
         db.runInTransaction {
             dao.deleteTrackById(id)
+            removeTrackFile(id, title, artist)
         }
     }
 
@@ -54,5 +56,23 @@ class CacheInteractor @Inject constructor(
                 deleteRecursively()
             }
         }
+    }
+
+    private fun removeTrackFile(id: Int, title: String, artist: String) {
+        val trackName = "$title-$artist-$id.mp3"
+        val file = File(
+            Environment.DIRECTORY_MUSIC,
+            contextProvider.context().getString(R.string.app_local_dir)
+        )
+        if (file.delete()
+        ) {
+            Log.d(TAG, "Successful deletion of: ${file.path}")
+        } else {
+            Log.d(TAG, "Fail to delete file: ${file.path}")
+        }
+    }
+
+    private companion object {
+        private const val TAG = "CacheInteractor"
     }
 }

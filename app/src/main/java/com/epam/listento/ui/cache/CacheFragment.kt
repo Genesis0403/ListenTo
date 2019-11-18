@@ -13,6 +13,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -22,6 +23,7 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.epam.listento.App
 import com.epam.listento.R
+import com.epam.listento.model.CustomAlbum
 import com.epam.listento.model.PlayerService
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
@@ -29,16 +31,23 @@ import com.epam.listento.model.player.utils.id
 import com.epam.listento.ui.TracksAdapter
 import com.epam.listento.ui.dialogs.AlbumCreationDialog
 import com.epam.listento.ui.dialogs.TrackDialogDirections
+import kotlinx.android.synthetic.main.cache_fragment.albumsRecyclerView
+import kotlinx.android.synthetic.main.cache_fragment.albumsSection
 import kotlinx.android.synthetic.main.tracks_fragment.progressBar
 import kotlinx.android.synthetic.main.tracks_fragment.tracksRecyclerView
 import javax.inject.Inject
 
-class CacheFragment : Fragment(), TracksAdapter.OnClickListener {
+class CacheFragment :
+    Fragment(),
+    TracksAdapter.OnClickListener,
+    AlbumsAdapter.OnClickListener {
 
-    @Inject
-    lateinit var cacheFactory: CacheScreenViewModel.Factory
     private val cacheViewModel: CacheScreenViewModel by activityViewModels {
         cacheFactory
+    }
+
+    private val albumsAdapter: AlbumsAdapter by lazy(LazyThreadSafetyMode.NONE) {
+        AlbumsAdapter(this)
     }
 
     private val navController by lazy { findNavController() }
@@ -48,6 +57,9 @@ class CacheFragment : Fragment(), TracksAdapter.OnClickListener {
     private var binder: PlayerService.PlayerBinder? = null
     private var controller: MediaControllerCompat? = null
 
+    @Inject
+    lateinit var cacheFactory: CacheScreenViewModel.Factory
+
     override fun onClick(track: Track) {
         binder?.let {
             cacheViewModel.handleItemClick(track)
@@ -56,6 +68,14 @@ class CacheFragment : Fragment(), TracksAdapter.OnClickListener {
 
     override fun onLongClick(track: Track) {
         AlbumCreationDialog.newInstance().show(requireActivity().supportFragmentManager, null)
+    }
+
+    override fun onClick(album: CustomAlbum) {
+        Toast.makeText(
+            requireContext(),
+            "${album.artist} - ${album.title}",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,6 +103,11 @@ class CacheFragment : Fragment(), TracksAdapter.OnClickListener {
             setHasFixedSize(true)
             layoutManager = LinearLayoutManager(context)
             adapter = tracksAdapter
+        }
+
+        albumsRecyclerView.run {
+            setHasFixedSize(true)
+            adapter = albumsAdapter
         }
 
         initObservers()
@@ -115,6 +140,17 @@ class CacheFragment : Fragment(), TracksAdapter.OnClickListener {
 
     private fun initObservers() {
         with(cacheViewModel) {
+
+            albums.observe(viewLifecycleOwner, Observer<List<CustomAlbum>> {
+                albumsRecyclerView.isVisible = if (it.isNullOrEmpty()) {
+                    albumsSection.isVisible = false
+                    false
+                } else {
+                    albumsSection.isVisible = true
+                    albumsAdapter.submitList(it)
+                    true
+                }
+            })
 
             tracks.observe(viewLifecycleOwner, Observer<List<Track>> {
                 val newData = it ?: emptyList()

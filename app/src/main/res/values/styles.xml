@@ -35,11 +35,12 @@
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
         <item name="android:windowIsFloating">false</item>
         <item name="actionMenuTextColor">@android:color/white</item>
+        <item name="android:windowTranslucentStatus">true</item>
+        <item name="android:windowTranslucentNavigation">true</item>
     </style>
 
     <style name="AppTheme.ToolBar" parent="Widget.MaterialComponents.Toolbar.Primary">
         <item name="android:elevation">1dp</item>
-        <item name="popupTheme">@style/ThemeOverlay.MaterialComponents.Light</item>
         <item name="android:textCursorDrawable">@drawable/cursor</item>
     </style>
 
@@ -50,6 +51,15 @@
     <style name="AppTheme.SlideAnimation">
         <item name="android:windowEnterAnimation">@anim/slide_up</item>
         <item name="android:windowExitAnimation">@anim/slide_down</item>
+    </style>
+
+    <style name="ListenTo.ArtistTextAppearance" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textColor">@color/colorOnActive</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
+    <style name="ListenTo.TitleTextAppearance" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textSize">12sp</item>
     </style>
 
 </resources>

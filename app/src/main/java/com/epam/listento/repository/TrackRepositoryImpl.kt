@@ -32,7 +32,6 @@ class TrackRepositoryImpl @Inject constructor(
     ): ApiResponse<DomainTrack> {
         val response = service.fetchTrack(id)
         return if (response.isSuccessful && response.body() != null) {
-
             val track = mappers.trackToDomain(response.body()?.track!!)
             if (isCaching) {
                 cacheTrack(track)

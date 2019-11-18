@@ -6,8 +6,10 @@ import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.ContextProvider
 import dagger.Module
 import dagger.Provides
+import dagger.Reusable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import java.io.File
 import javax.inject.Singleton
 
 @Module(

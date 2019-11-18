@@ -10,9 +10,11 @@ import androidx.lifecycle.viewModelScope
 import com.epam.listento.R
 import com.epam.listento.db.TracksDao
 import com.epam.listento.domain.DomainTrack
+import com.epam.listento.model.CustomAlbum
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.toMetadata
+import com.epam.listento.repository.global.AlbumsRepository
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.PlatformMappers
@@ -24,6 +26,7 @@ import javax.inject.Provider
 
 class CacheScreenViewModel @Inject constructor(
     private val musicRepo: MusicRepository,
+    private val albumsRepo: AlbumsRepository,
     private val mappers: PlatformMappers,
     private val dispatchers: AppDispatchers,
     dao: TracksDao
@@ -34,6 +37,8 @@ class CacheScreenViewModel @Inject constructor(
 
     private val _playbackState = MutableLiveData<PlaybackState>()
     val playbackState: LiveData<PlaybackState> get() = _playbackState
+
+    val albums: LiveData<List<CustomAlbum>> = albumsRepo.getAlbums()
 
     private val _command: MutableLiveData<Command> = SingleLiveEvent()
     val command: LiveData<Command> get() = _command

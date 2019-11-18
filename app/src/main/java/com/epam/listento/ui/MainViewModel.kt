@@ -54,7 +54,7 @@ class MainViewModel @Inject constructor(
 
     fun uncacheTrack(id: Int, title: String, artist: String) {
         viewModelScope.launch(dispatchers.io) {
-            cacheInteractor.uncacheTrack(id)
+            cacheInteractor.uncacheTrack(id, title, artist)
         }
     }
 
