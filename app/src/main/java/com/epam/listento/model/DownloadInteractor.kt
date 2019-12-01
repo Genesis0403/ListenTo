@@ -93,13 +93,12 @@ class DownloadInteractor @Inject constructor(
     ): ApiResponse<String> {
         return trackRepo.fetchTrack(id, isCaching).run {
             if (status.isSuccess() && body != null) {
-                storageRepo.fetchStorage(body.storageDir!!).run {
-                    if (status.isSuccess() && body != null) {
-                        val url = audioRepo.fetchAudioUrl(body)
-                        ApiResponse.success(url)
-                    } else {
-                        ApiResponse.error(error)
-                    }
+                val storage = storageRepo.fetchStorage(body.storageDir!!)
+                if (storage.status.isSuccess() && storage.body != null) {
+                    val url = audioRepo.fetchAudioUrl(storage.body)
+                    ApiResponse.success(url)
+                } else {
+                    ApiResponse.error(error)
                 }
             } else {
                 ApiResponse.error(DOWNLOAD_ERROR)

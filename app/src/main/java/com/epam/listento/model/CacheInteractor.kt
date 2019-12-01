@@ -19,14 +19,15 @@ class CacheInteractor @Inject constructor(
 ) {
 
     @WorkerThread
-    suspend fun isTrackInCache(id: Int): Boolean {
+    fun isTrackInCache(id: Int): Boolean {
         val tracks = dao.getTracks()
         return tracks.any { it.id == id }
     }
 
     @WorkerThread
     suspend fun cacheTrack(id: Int): Boolean {
-        return trackRepo.fetchTrack(id, true).status.isSuccess()
+        val response = trackRepo.fetchTrack(id, true)
+        return response.status.isSuccess()
     }
 
     @WorkerThread
@@ -62,10 +63,9 @@ class CacheInteractor @Inject constructor(
         val trackName = "$title-$artist-$id.mp3"
         val file = File(
             Environment.DIRECTORY_MUSIC,
-            contextProvider.context().getString(R.string.app_local_dir)
+            contextProvider.context().getString(R.string.app_local_dir) + "/$trackName"
         )
-        if (file.delete()
-        ) {
+        if (file.delete()) {
             Log.d(TAG, "Successful deletion of: ${file.path}")
         } else {
             Log.d(TAG, "Fail to delete file: ${file.path}")

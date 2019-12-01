@@ -2,6 +2,7 @@ package com.epam.listento.ui
 
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -54,6 +55,10 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
                 AppCompatDelegate.setDefaultNightMode(uiMode)
                 recreate()
             }
+        })
+
+        mainViewModel.showToast.observe(this, Observer<String> {
+            Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         })
     }
 

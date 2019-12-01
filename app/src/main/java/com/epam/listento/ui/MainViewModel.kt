@@ -1,6 +1,6 @@
 package com.epam.listento.ui
 
-import android.widget.Toast
+import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -11,7 +11,9 @@ import com.epam.listento.R
 import com.epam.listento.model.CacheInteractor
 import com.epam.listento.model.DownloadInteractor
 import com.epam.listento.utils.AppDispatchers
+import com.epam.listento.utils.BaseViewModelFactory
 import com.epam.listento.utils.ContextProvider
+import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -24,9 +26,13 @@ class MainViewModel @Inject constructor(
     private val dispatchers: AppDispatchers
 ) : ViewModel() {
 
-    private val _nightMode: MutableLiveData<Int> = MutableLiveData()
+    private val _nightMode: MutableLiveData<Int> = SingleLiveEvent()
     val nightMode: LiveData<Int> get() = _nightMode
 
+    private val _showToast: MutableLiveData<String> = SingleLiveEvent()
+    val showToast: LiveData<String> get() = _showToast
+
+    @UiThread
     fun handleThemeChange(isNightMode: Boolean, key: String) {
         if (key == NIGHT_MODE_KEY) {
             _nightMode.value = if (isNightMode) {
@@ -37,21 +43,22 @@ class MainViewModel @Inject constructor(
         }
     }
 
+    @UiThread
     fun cacheTrack(id: Int, title: String, artist: String) {
         viewModelScope.launch(dispatchers.ui) {
             val response = withContext(dispatchers.io) {
                 downloadInteractor.downloadTrack(id, title, artist)
             }
             val context = contextProvider.context()
-            val message = if (response.status.isSuccess()) {
+            _showToast.value = if (response.status.isSuccess()) {
                 context.getString(R.string.success_caching)
             } else {
                 context.getString(R.string.failed_caching)
             }
-            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
         }
     }
 
+    @UiThread
     fun uncacheTrack(id: Int, title: String, artist: String) {
         viewModelScope.launch(dispatchers.io) {
             cacheInteractor.uncacheTrack(id, title, artist)
@@ -59,14 +66,8 @@ class MainViewModel @Inject constructor(
     }
 
     class Factory @Inject constructor(
-        private val provider: Provider<MainViewModel>
-    ) : ViewModelProvider.Factory {
-
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-            return provider.get() as T
-        }
-    }
+        provider: Provider<MainViewModel>
+    ) : ViewModelProvider.Factory by BaseViewModelFactory(provider)
 
     private companion object {
         private const val NIGHT_MODE_KEY = "night_mode"

@@ -19,7 +19,11 @@ class StorageRepositoryImpl @Inject constructor(
         storageDir: String
     ): ApiResponse<DomainStorage> {
         return try {
-            ApiResponse.success(mappers.storageToDomain(service.fetchStorage(storageDir).body()!!))
+            ApiResponse.success(
+                mappers.storageToDomain(
+                    service.fetchStorage(storageDir).body()!!
+                )
+            )
         } catch (e: Throwable) {
             Log.e(TAG, "$e")
             ApiResponse.error(e)

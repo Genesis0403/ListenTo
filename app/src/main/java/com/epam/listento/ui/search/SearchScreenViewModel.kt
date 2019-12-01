@@ -1,6 +1,7 @@
 package com.epam.listento.ui.search
 
 import android.support.v4.media.session.PlaybackStateCompat
+import androidx.annotation.UiThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -17,6 +18,7 @@ import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.repository.global.TracksRepository
 import com.epam.listento.utils.AppDispatchers
+import com.epam.listento.utils.BaseViewModelFactory
 import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -41,6 +43,7 @@ class SearchScreenViewModel @Inject constructor(
     private val _command: MutableLiveData<Command> = SingleLiveEvent()
     val command: LiveData<Command> get() = _command
 
+    @UiThread
     fun fetchTracks(query: String) {
         if (query.isNotEmpty() && query.length <= QUERY_LENGTH_MAX) {
             viewModelScope.launch(dispatchers.default) {
@@ -53,6 +56,7 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
+    @UiThread
     fun handleItemClick(track: Track) {
         viewModelScope.launch(dispatchers.ui) {
             val current = currentPlaying.value
@@ -69,6 +73,7 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
+    @UiThread
     fun handleLongItemClick(track: Track) {
         val artist = track.artist?.name ?: ""
         _command.value =
@@ -90,6 +95,7 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
+    @UiThread
     fun handleMetadataChange(trackId: Int) {
         viewModelScope.launch(dispatchers.ui) {
             _currentPlaying.value = withContext(dispatchers.default) {
@@ -98,6 +104,7 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
+    @UiThread
     fun handlePlaybackStateChange(state: Int) {
         _playbackState.value = when (state) {
             PlaybackStateCompat.STATE_PLAYING -> PlaybackState.Playing
@@ -107,6 +114,7 @@ class SearchScreenViewModel @Inject constructor(
         }
     }
 
+    @UiThread
     fun handlePlayerStateChange(trackId: Int = -1) {
         viewModelScope.launch(dispatchers.default) {
             val newRes = when (playbackState.value) {
@@ -149,14 +157,8 @@ class SearchScreenViewModel @Inject constructor(
     }
 
     class Factory @Inject constructor(
-        private val provider: Provider<SearchScreenViewModel>
-    ) : ViewModelProvider.Factory {
-
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel?> create(modelClass: Class<T>): T {
-            return provider.get() as T
-        }
-    }
+        provider: Provider<SearchScreenViewModel>
+    ) : ViewModelProvider.Factory by BaseViewModelFactory(provider)
 
     private companion object {
         private const val QUERY_LENGTH_MAX = 30
