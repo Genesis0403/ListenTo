@@ -3,6 +3,7 @@ package com.epam.listento.di
 import android.app.Application
 import com.epam.listento.model.PlayerService
 import com.epam.listento.ui.MainActivity
+import com.epam.listento.ui.albums.AlbumFragment
 import com.epam.listento.ui.cache.CacheFragment
 import com.epam.listento.ui.dialogs.AlbumCreationDialog
 import com.epam.listento.ui.dialogs.TrackDialog
@@ -37,4 +38,5 @@ interface AppComponent {
     fun inject(fragment: TrackDialog)
     fun inject(fragment: PreferencesFragment)
     fun inject(dialog: AlbumCreationDialog)
+    fun inject(fragment: AlbumFragment)
 }

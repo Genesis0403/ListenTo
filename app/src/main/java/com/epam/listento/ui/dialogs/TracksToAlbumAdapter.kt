@@ -66,6 +66,7 @@ class TracksToAlbumAdapter(
         val title: TextView = view.findViewById(R.id.title)
         val duration: TextView = view.findViewById(R.id.duration)
         val cardView: CardView = view.findViewById(R.id.cardView)
+        //TODO omg remove this and change to selector
         private val color: Int
 
         init {

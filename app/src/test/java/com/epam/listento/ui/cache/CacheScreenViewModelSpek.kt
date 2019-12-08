@@ -65,9 +65,9 @@ object CacheScreenViewModelSpek : Spek({
         viewModel = spyk(
             CacheScreenViewModel(
                 musicRepo,
-                albumsRepo,
                 mappers,
                 dispatchers,
+                albumsRepo,
                 dao
             )
         )
@@ -111,32 +111,32 @@ object CacheScreenViewModelSpek : Spek({
         }
 
         it("should navigate to player") {
-            viewModel.handleItemClick(mockedTrack)
+            viewModel.handleTrackClick(mockedTrack)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.ShowPlayerActivity) }
         }
 
         it("should change playlist") {
-            viewModel.handleItemClick(track)
+            viewModel.handleTrackClick(track)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }
 
         it("should play track when ids are not equals") {
             every { viewModel.playbackState.value } returns PlaybackState.Playing
-            viewModel.handleItemClick(track)
+            viewModel.handleTrackClick(track)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }
 
         it("should play track when state is stopped") {
             every { currentTrack.id } returns fakeId
             every { viewModel.playbackState.value } returns PlaybackState.Stopped
-            viewModel.handleItemClick(track)
+            viewModel.handleTrackClick(track)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }
 
         it("should play track when state is paused") {
             every { currentTrack.id } returns fakeId
             every { viewModel.playbackState.value } returns PlaybackState.Paused
-            viewModel.handleItemClick(track)
+            viewModel.handleTrackClick(track)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }
     }

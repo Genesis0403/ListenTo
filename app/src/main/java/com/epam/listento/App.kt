@@ -1,10 +1,12 @@
 package com.epam.listento
 
 import android.app.Application
+import android.content.Intent
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import com.epam.listento.di.AppComponent
 import com.epam.listento.di.DaggerAppComponent
+import com.epam.listento.model.PlayerService
 
 class App : Application() {
 
@@ -19,7 +21,7 @@ class App : Application() {
 
     override fun onTerminate() {
         super.onTerminate()
-        // TODO stop service if not stopped
+        stopService(Intent(this, PlayerService::class.java))
     }
 
     private fun setUiMode() {

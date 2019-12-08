@@ -24,4 +24,10 @@ interface CustomAlbumsDao {
 
     @Query("DELETE FROM CustomAlbum")
     fun removeAlbums()
+
+    @Query("SELECT * FROM CustomAlbum WHERE title = :title")
+    fun getAlbumByTitle(title: String): LiveData<List<CustomAlbum>>
+
+    @Query("SELECT * FROM CustomAlbum WHERE id = :id")
+    fun getAlbumById(id: Int): LiveData<CustomAlbum>
 }

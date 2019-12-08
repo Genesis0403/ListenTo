@@ -12,6 +12,14 @@ class AlbumsRepositoryImpl @Inject constructor(
     private val dao: CustomAlbumsDao
 ) : AlbumsRepository {
 
+    override fun getAlbumById(id: Int): LiveData<CustomAlbum> {
+        return dao.getAlbumById(id)
+    }
+
+    override fun getAlbumByTitle(title: String): LiveData<List<CustomAlbum>> {
+        return dao.getAlbumByTitle(title)
+    }
+
     override suspend fun addAlbums(albums: List<CustomAlbum>) {
         db.runInTransaction {
             dao.insertAlbums(albums)

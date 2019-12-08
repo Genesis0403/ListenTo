@@ -21,7 +21,9 @@ class AlbumsAdapter(
 ) : ListAdapter<CustomAlbum, AlbumsAdapter.AlbumViewHolder>(CustomAlbum.diffUtil) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): AlbumViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.album_item, parent, false)
+        val view = LayoutInflater
+            .from(parent.context)
+            .inflate(R.layout.album_item, parent, false)
         return AlbumViewHolder(view, listener)
     }
 

@@ -1,6 +1,7 @@
 package com.epam.listento.ui.cache
 
 import android.support.v4.media.session.PlaybackStateCompat
+import androidx.annotation.UiThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Transformations
@@ -26,9 +27,9 @@ import javax.inject.Provider
 
 class CacheScreenViewModel @Inject constructor(
     private val musicRepo: MusicRepository,
-    private val albumsRepo: AlbumsRepository,
     private val mappers: PlatformMappers,
     private val dispatchers: AppDispatchers,
+    albumsRepo: AlbumsRepository,
     dao: TracksDao
 ) : ViewModel() {
 
@@ -51,7 +52,8 @@ class CacheScreenViewModel @Inject constructor(
         } as MutableLiveData
     val tracks: LiveData<List<Track>> get() = _tracks
 
-    fun handleItemClick(track: Track) {
+    @UiThread
+    fun handleTrackClick(track: Track) {
         viewModelScope.launch(dispatchers.ui) {
             val current = currentPlaying.value
             val state = playbackState.value
@@ -67,6 +69,12 @@ class CacheScreenViewModel @Inject constructor(
         }
     }
 
+    @UiThread
+    fun handleAlbumClick(album: CustomAlbum) {
+        _command.value = Command.ShowAlbumActivity(album.title, album.id, album.cover)
+    }
+
+    @UiThread
     fun handleThreeDotButtonClick(track: Track) {
         val artist = track.artist?.name ?: ""
         _command.value =
@@ -77,6 +85,7 @@ class CacheScreenViewModel @Inject constructor(
             )
     }
 
+    @UiThread
     fun handleMetadataChange(trackId: Int) {
         viewModelScope.launch(dispatchers.ui) {
             _currentPlaying.value = withContext(dispatchers.default) {
@@ -85,6 +94,7 @@ class CacheScreenViewModel @Inject constructor(
         }
     }
 
+    @UiThread
     fun handlePlaybackStateChange(state: Int) {
         _playbackState.value = when (state) {
             PlaybackStateCompat.STATE_PLAYING -> PlaybackState.Playing
@@ -94,6 +104,7 @@ class CacheScreenViewModel @Inject constructor(
         }
     }
 
+    @UiThread
     fun handlePlayerStateChange(trackId: Int = -1) {
         viewModelScope.launch(dispatchers.default) {
             val newRes = getPlaybackRes()
@@ -119,8 +130,8 @@ class CacheScreenViewModel @Inject constructor(
 
     private fun getPlaybackRes(): Int {
         return when (playbackState.value) {
-            PlaybackState.Playing -> R.drawable.exo_icon_pause
-            PlaybackState.Paused -> R.drawable.exo_icon_play
+            PlaybackState.Playing -> R.drawable.lt_pause_icon
+            PlaybackState.Paused -> R.drawable.lt_play_icon
             else -> Track.NO_RES
         }
     }
@@ -141,7 +152,15 @@ class CacheScreenViewModel @Inject constructor(
 
     sealed class Command {
         object ShowPlayerActivity : Command()
+
         object PlayTrack : Command()
+
+        class ShowAlbumActivity(
+            val title: String,
+            val id: Int,
+            val cover: String
+        ) : Command()
+
         class ShowCacheDialog(
             val id: Int,
             val title: String,

@@ -25,6 +25,13 @@
                     app:exitAnim="@anim/slide_down"
                     app:popEnterAnim="@anim/slide_up"
                     app:popExitAnim="@anim/slide_down" />
+            <action
+                    android:id="@+id/action_cacheFragmentNav_to_albumActivity"
+                    app:destination="@id/albumActivity"
+                    app:enterAnim="@anim/nav_default_enter_anim"
+                    app:exitAnim="@anim/nav_default_exit_anim"
+                    app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+                    app:popExitAnim="@anim/nav_default_pop_exit_anim" />
         </fragment>
         <action android:id="@+id/action_global_playerActivity32"
                 app:destination="@id/playerActivity"
@@ -34,6 +41,21 @@
                 android:id="@+id/albumCreationDialog"
                 android:name="com.epam.listento.ui.dialogs.AlbumCreationDialog"
                 android:label="AlbumCreationDialog" />
+        <activity
+                android:id="@+id/albumActivity"
+                android:name="com.epam.listento.ui.albums.AlbumActivity"
+                android:label="AlbumActivity" >
+            <argument
+                    android:name="albumTitle"
+                    app:argType="string" />
+            <argument
+                    android:name="id"
+                    app:argType="integer"
+                    android:defaultValue="-1" />
+            <argument
+                    android:name="coverUrl"
+                    app:argType="string" />
+        </activity>
     </navigation>
     <navigation android:id="@+id/preferencesFragment" app:startDestination="@id/prefFragment" android:label="Settings">
         <fragment

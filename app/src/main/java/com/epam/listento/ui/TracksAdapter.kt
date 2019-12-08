@@ -24,11 +24,17 @@ class TracksAdapter(
 ) : ListAdapter<Track, TracksAdapter.TrackViewHolder>(Track.diffCallback) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TrackViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.track_item, parent, false)
+        val view = LayoutInflater
+            .from(parent.context)
+            .inflate(R.layout.track_item, parent, false)
         return TrackViewHolder(view, listener)
     }
 
-    override fun onBindViewHolder(holder: TrackViewHolder, position: Int, payloads: MutableList<Any>) {
+    override fun onBindViewHolder(
+        holder: TrackViewHolder,
+        position: Int,
+        payloads: MutableList<Any>
+    ) {
         super.onBindViewHolder(holder, position, payloads)
         if (payloads.isEmpty()) {
             onBindViewHolder(holder, position)
@@ -75,13 +81,14 @@ class TracksAdapter(
         }
     }
 
-    inner class TrackViewHolder(view: View, listener: OnClickListener) : RecyclerView.ViewHolder(view) {
+    inner class TrackViewHolder(view: View, listener: OnClickListener) :
+        RecyclerView.ViewHolder(view) {
         val cover: ImageView = view.findViewById(R.id.cover)
         val artist: TextView = view.findViewById(R.id.artist)
         val title: TextView = view.findViewById(R.id.title)
         val duration: TextView = view.findViewById(R.id.duration)
         val cardView: CardView = view.findViewById(R.id.cardView)
-        val playbackState: ImageView = view.findViewById(R.id.playbackState)
+        val playbackState: ImageView = view.findViewById(R.id.stateImage)
         val threeDotButton: ImageView = view.findViewById(R.id.threeDotButton)
 
         init {

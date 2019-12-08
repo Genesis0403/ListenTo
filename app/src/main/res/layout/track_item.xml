@@ -83,7 +83,7 @@
                     app:layout_constraintGuide_end="82dp" />
 
             <ImageView
-                    android:id="@+id/playbackState"
+                    android:id="@+id/stateImage"
                     android:layout_width="30dp"
                     android:layout_height="30dp"
                     android:layout_marginTop="4dp"

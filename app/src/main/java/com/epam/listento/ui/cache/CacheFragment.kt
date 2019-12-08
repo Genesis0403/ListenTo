@@ -10,10 +10,7 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
-import android.widget.Toast
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
@@ -38,7 +35,7 @@ import kotlinx.android.synthetic.main.tracks_fragment.tracksRecyclerView
 import javax.inject.Inject
 
 class CacheFragment :
-    Fragment(),
+    Fragment(R.layout.cache_fragment),
     TracksAdapter.OnClickListener,
     AlbumsAdapter.OnClickListener {
 
@@ -62,20 +59,16 @@ class CacheFragment :
 
     override fun onClick(track: Track) {
         binder?.let {
-            cacheViewModel.handleItemClick(track)
+            cacheViewModel.handleTrackClick(track)
         }
+    }
+
+    override fun onClick(album: CustomAlbum) {
+        cacheViewModel.handleAlbumClick(album)
     }
 
     override fun onLongClick(track: Track) {
         AlbumCreationDialog.newInstance().show(requireActivity().supportFragmentManager, null)
-    }
-
-    override fun onClick(album: CustomAlbum) {
-        Toast.makeText(
-            requireContext(),
-            "${album.artist} - ${album.title}",
-            Toast.LENGTH_LONG
-        ).show()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -83,18 +76,10 @@ class CacheFragment :
         App.component.inject(this)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.cache_fragment, container, false)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        activity?.findViewById<Toolbar>(R.id.appToolBar)?.apply {
+        requireActivity().findViewById<Toolbar>(R.id.appToolBar)?.apply {
             menu.clear()
             inflateMenu(R.menu.search_toolbar_menu)
         }
@@ -166,11 +151,18 @@ class CacheFragment :
                 viewLifecycleOwner,
                 Observer<CacheScreenViewModel.Command> { action ->
                     when (action) {
-                        CacheScreenViewModel.Command.ShowPlayerActivity -> {
+                        CacheScreenViewModel.Command.ShowPlayerActivity ->
                             navController.navigate(R.id.playerActivity)
-                        }
-                        is CacheScreenViewModel.Command.PlayTrack -> {
+                        is CacheScreenViewModel.Command.PlayTrack ->
                             controller?.transportControls?.play()
+                        is CacheScreenViewModel.Command.ShowAlbumActivity -> {
+                            val direction =
+                                CacheFragmentDirections.actionCacheFragmentNavToAlbumActivity(
+                                    action.title,
+                                    action.id,
+                                    action.cover
+                                )
+                            navController.navigate(direction)
                         }
                         is CacheScreenViewModel.Command.ShowCacheDialog -> {
                             val actionId =

@@ -30,24 +30,24 @@
                     tools:src="@tools:sample/avatars" />
 
             <TextView
-                    android:id="@+id/artist"
+                    android:id="@+id/title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_margin="2dp"
                     android:singleLine="true"
-                    android:textAppearance="@style/ListenTo.ArtistTextAppearance"
-                    tools:text="Pyrokinesis" />
+                    android:textAppearance="@style/ListenTo.AlbumTitleTextAppearance"
+                    tools:text="ECLIPS" />
 
             <TextView
-                    android:id="@+id/title"
+                    android:id="@+id/artist"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_gravity="center"
                     android:layout_marginBottom="4dp"
                     android:singleLine="true"
-                    android:textAppearance="@style/ListenTo.TitleTextAppearance"
-                    tools:text="ECLIPS" />
+                    android:textAppearance="@style/ListenTo.AlbumArtistTextAppearance"
+                    tools:text="Pyrokinesis" />
         </LinearLayout>
 
     </androidx.cardview.widget.CardView>

@@ -15,7 +15,8 @@ import javax.inject.Singleton
 @Module(
     includes = [
         RepositoryModule::class,
-        PlayerModule::class
+        PlayerModule::class,
+        AssistedModule::class
     ]
 )
 class AppModule {

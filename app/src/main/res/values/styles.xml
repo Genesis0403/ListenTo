@@ -62,4 +62,17 @@
         <item name="android:textSize">12sp</item>
     </style>
 
+    <style name="ListenTo.ToolBarTextAppearance" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:color">@android:color/white</item>
+    </style>
+
+    <style name="ListenTo.AlbumArtistTextAppearance" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="ListenTo.AlbumTitleTextAppearance" parent="TextAppearance.MaterialComponents.Headline5">
+        <item name="android:textColor">@color/colorOnActive</item>
+        <item name="android:textSize">16sp</item>
+    </style>
+
 </resources>
