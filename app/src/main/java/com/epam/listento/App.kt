@@ -15,7 +15,6 @@ class App : Application() {
         _component = DaggerAppComponent.builder()
             .application(this)
             .build()
-
         setUiMode()
     }
 

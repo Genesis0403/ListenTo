@@ -20,9 +20,10 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 class MediaSessionCallback(
-    dispatchers: AppDispatchers,
+    private val dispatchers: AppDispatchers,
     private val context: Context,
     private val musicRepo: MusicRepository,
     private val downloadInteractor: DownloadInteractor,
@@ -30,7 +31,7 @@ class MediaSessionCallback(
     private val onSessionUpdate: (metadata: MediaMetadataCompat?, isActive: Boolean, state: Int) -> Unit
 ) : MediaSessionCompat.Callback() {
 
-    private val sessionScope = CoroutineScope(SupervisorJob() + dispatchers.io)
+    private val sessionScope = CoroutineScope(SupervisorJob() + dispatchers.ui)
     private var sessionJob: Job? = null
 
     private val emptyMetadata = MediaMetadataCompat.Builder()
@@ -56,7 +57,7 @@ class MediaSessionCallback(
         val track = musicRepo.getCurrent()
 
         sessionJob = sessionScope.launch {
-            val metadata = downloadInteractor.fillMetadata(track)
+            val metadata = withContext(dispatchers.io) { downloadInteractor.fillMetadata(track) }
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
 
             if (currentState == PlaybackStateCompat.STATE_PAUSED && currentPlaying?.id == track.id) {
@@ -64,7 +65,9 @@ class MediaSessionCallback(
             } else {
                 currentPlaying = metadata
                 val isCaching = downloadInteractor.isCaching()
-                val result = downloadInteractor.downloadTrack(track, isCaching)
+                val result = withContext(dispatchers.io) {
+                    downloadInteractor.downloadTrack(track, isCaching)
+                }
                 if (result.status.isSuccess() && result.body != null) {
                     prepareToPlay(Uri.parse(result.body))
                     player.playWhenReady = true
@@ -105,14 +108,15 @@ class MediaSessionCallback(
         }
 
         val track = musicRepo.getNext()
-
         sessionJob = sessionScope.launch {
-            val metadata = downloadInteractor.fillMetadata(track)
+            val metadata = withContext(dispatchers.io) { downloadInteractor.fillMetadata(track) }
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
             currentPlaying = metadata
 
             val isCaching = downloadInteractor.isCaching()
-            val result = downloadInteractor.downloadTrack(track, isCaching)
+            val result = withContext(dispatchers.io) {
+                downloadInteractor.downloadTrack(track, isCaching)
+            }
             if (result.status.isSuccess() && result.body != null) {
                 prepareToPlay(Uri.parse(result.body))
                 player.playWhenReady = true
@@ -130,14 +134,15 @@ class MediaSessionCallback(
         }
 
         val track = musicRepo.getPrevious()
-
         sessionJob = sessionScope.launch {
-            val metadata = downloadInteractor.fillMetadata(track)
+            val metadata = withContext(dispatchers.io) { downloadInteractor.fillMetadata(track) }
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
             currentPlaying = metadata
 
             val isCaching = downloadInteractor.isCaching()
-            val result = downloadInteractor.downloadTrack(track, isCaching)
+            val result = withContext(dispatchers.io) {
+                downloadInteractor.downloadTrack(track, isCaching)
+            }
             if (result.status.isSuccess() && result.body != null) {
                 prepareToPlay(Uri.parse(result.body))
                 player.playWhenReady = true

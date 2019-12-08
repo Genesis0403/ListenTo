@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
         xmlns:app="http://schemas.android.com/apk/res-auto"
         xmlns:tools="http://schemas.android.com/tools"
         android:id="@+id/tracksContainer"
@@ -17,11 +17,10 @@
                 android:id="@+id/albumsSection"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/albums"
                 android:layout_margin="8dp"
-                android:textColor="@color/colorPrimary"
+                android:text="@string/albums"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
-                />
+                android:textColor="@color/colorPrimary" />
 
         <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/albumsRecyclerView"
@@ -35,11 +34,10 @@
                 android:id="@+id/tracksSection"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="@string/tracks"
                 android:layout_margin="8dp"
-                android:textColor="@color/colorPrimary"
+                android:text="@string/tracks"
                 android:textAppearance="@style/TextAppearance.MaterialComponents.Headline5"
-                />
+                android:textColor="@color/colorPrimary" />
 
         <androidx.recyclerview.widget.RecyclerView
                 android:id="@+id/tracksRecyclerView"
@@ -55,4 +53,4 @@
                 android:progressTint="@color/colorPrimary"
                 android:visibility="gone" />
     </LinearLayout>
-</LinearLayout>
+</FrameLayout>

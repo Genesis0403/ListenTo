@@ -13,11 +13,15 @@ import androidx.navigation.ui.setupWithNavController
 import androidx.preference.PreferenceManager
 import com.epam.listento.App
 import com.epam.listento.R
+import com.epam.listento.ServiceHelper
 import kotlinx.android.synthetic.main.activity_main.appToolBar
 import kotlinx.android.synthetic.main.activity_main.navigationBar
 import javax.inject.Inject
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
+
+    @Inject
+    lateinit var helper: ServiceHelper
 
     @Inject
     lateinit var factory: MainViewModel.Factory
@@ -60,11 +64,13 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         mainViewModel.showToast.observe(this, Observer<String> {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         })
+        helper.subscribe()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         sp.unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)
+        helper.unsubscribe()
     }
 
     private val sharedPreferencesListener =

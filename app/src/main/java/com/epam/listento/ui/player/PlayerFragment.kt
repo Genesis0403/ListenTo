@@ -1,18 +1,8 @@
 package com.epam.listento.ui.player
 
 import android.annotation.SuppressLint
-import android.content.ComponentName
-import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
 import android.os.Bundle
-import android.os.IBinder
-import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.MediaControllerCompat
-import android.support.v4.media.session.PlaybackStateCompat
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.SeekBar
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -24,7 +14,6 @@ import com.bumptech.glide.request.RequestOptions
 import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.model.MsMapper
-import com.epam.listento.model.PlayerService
 import com.epam.listento.model.player.PlaybackState
 import kotlinx.android.synthetic.main.player_fragment.albumCover
 import kotlinx.android.synthetic.main.player_fragment.artistName
@@ -38,15 +27,12 @@ import kotlinx.android.synthetic.main.player_fragment.trackTimeProgress
 import kotlinx.android.synthetic.main.player_fragment.trackTitle
 import javax.inject.Inject
 
-class PlayerFragment : Fragment() {
+class PlayerFragment : Fragment(R.layout.player_fragment) {
 
-    // TODO pass current playing track via bundle
     private val playerViewModel: PlayerViewModel by viewModels {
         factory
     }
 
-    private var binder: PlayerService.PlayerBinder? = null
-    private var controller: MediaControllerCompat? = null
     private var isUserTouching = false
 
     @Inject
@@ -57,88 +43,50 @@ class PlayerFragment : Fragment() {
         App.component.inject(this)
     }
 
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.player_fragment, container, false)
-    }
-
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
         trackTimeProgress.setOnSeekBarChangeListener(seekBarListener)
 
-        initObservers()
-
         playButton.setOnClickListener {
-            listenToPlayerState()
+            playerViewModel.handleMediaButtonClick(R.id.playButton)
         }
 
         forwardButton.setOnClickListener {
             initOnSkipListener {
-                controller?.transportControls?.skipToNext()
+                playerViewModel.handleMediaButtonClick(R.id.forwardButton)
             }
         }
 
         rewindButton.setOnClickListener {
             initOnSkipListener {
-                controller?.transportControls?.skipToPrevious()
+                playerViewModel.handleMediaButtonClick(R.id.rewindButton)
             }
         }
 
         backButton.setOnClickListener {
             activity?.onBackPressed()
         }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        activity?.bindService(
-            Intent(activity, PlayerService::class.java),
-            connection,
-            Context.BIND_AUTO_CREATE
-        )
+        initObservers()
     }
 
     override fun onStop() {
         super.onStop()
-        activity?.unbindService(connection)
-        controller?.unregisterCallback(controllerCallback)
-        binder = null
-        controller = null
         playerViewModel.stopScheduler()
     }
 
     private fun initOnSkipListener(action: () -> Unit) {
-        val state = controller?.playbackState?.state
-        if (state == PlaybackStateCompat.STATE_PLAYING || state == PlaybackStateCompat.STATE_PAUSED) {
+        val state = playerViewModel.serviceHelper.playbackState.value
+        if (state == PlaybackState.Playing || state == PlaybackState.Paused) {
             action()
             trackTimeProgress.progress = 0
-        }
-    }
-
-    private fun listenToPlayerState() {
-        controller?.let {
-            when (playerViewModel.playbackState.value) {
-                PlaybackState.Playing -> {
-                    it.transportControls.pause()
-                }
-                PlaybackState.Paused -> {
-                    it.transportControls.play()
-                }
-                else -> {
-                    playButton.isChecked = false
-                }
-            }
         }
     }
 
     private fun startScheduler() {
         playerViewModel.startScheduler {
             if (!isUserTouching) {
-                trackTimeProgress.progress = binder?.getProgress()?.toInt() ?: 0
+                trackTimeProgress.progress = playerViewModel.progress?.toInt() ?: 0
                 changeSeekBarTimings(
                     trackTimeProgress.progress,
                     trackTimeProgress.max - trackTimeProgress.progress
@@ -156,12 +104,30 @@ class PlayerFragment : Fragment() {
     private fun initObservers() {
         with(playerViewModel) {
 
-            currentPlaying.observe(viewLifecycleOwner, Observer<PlayerViewModel.MetadataTrack> {
-                displayTrack(it)
-            })
+            serviceHelper.currentPlaying.observe(
+                viewLifecycleOwner,
+                Observer<Int> {
+                    displayTrack(currentTrack)
+                })
 
-            playbackState.observe(viewLifecycleOwner, Observer<PlaybackState> {
-                restorePlayButtonState(it)
+            serviceHelper.playbackState.observe(
+                viewLifecycleOwner,
+                Observer<PlaybackState> {
+                    restorePlayButtonState(it)
+                })
+
+            command.observe(viewLifecycleOwner, Observer<PlayerViewModel.Command> {
+                when (it) {
+                    PlayerViewModel.Command.Play ->
+                        playerViewModel.transportControls?.play()
+                    PlayerViewModel.Command.Pause ->
+                        playerViewModel.transportControls?.pause()
+                    PlayerViewModel.Command.Forward ->
+                        playerViewModel.transportControls?.skipToNext()
+                    PlayerViewModel.Command.Backward ->
+                        playerViewModel.transportControls?.skipToPrevious()
+                    else -> playButton.isChecked = false
+                }
             })
         }
     }
@@ -172,7 +138,7 @@ class PlayerFragment : Fragment() {
             artistName.text = artist
             trackTimeProgress.max = duration.toInt()
             loadImage(cover)
-            val positive = binder?.getProgress()?.toInt() ?: 0
+            val positive = playerViewModel.progress?.toInt() ?: 0
             positiveTiming.text = MsMapper.convert(positive)
             negativeTiming.text = MsMapper.convert(duration.toInt())
         }
@@ -201,38 +167,6 @@ class PlayerFragment : Fragment() {
         }
     }
 
-    private val connection = object : ServiceConnection {
-        override fun onServiceDisconnected(name: ComponentName?) {
-            binder = null
-            controller?.unregisterCallback(controllerCallback)
-            controller = null
-        }
-
-        override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
-            binder = service as PlayerService.PlayerBinder
-            binder?.let {
-                val token = it.getSessionToken() ?: return
-                controller = MediaControllerCompat(requireActivity(), token).also { controller ->
-                    controller.registerCallback(controllerCallback)
-                }
-            }
-        }
-    }
-
-    private val controllerCallback = object : MediaControllerCompat.Callback() {
-        override fun onPlaybackStateChanged(state: PlaybackStateCompat?) {
-            super.onPlaybackStateChanged(state)
-            playerViewModel.handlePlaybackStateChange(
-                state?.state ?: PlaybackStateCompat.STATE_NONE
-            )
-        }
-
-        override fun onMetadataChanged(metadata: MediaMetadataCompat?) {
-            super.onMetadataChanged(metadata)
-            playerViewModel.handleMetadataChange(metadata?.toMetadataTrack() ?: return)
-        }
-    }
-
     private val seekBarListener = object : SeekBar.OnSeekBarChangeListener {
 
         private var resultProgress = 0
@@ -251,7 +185,7 @@ class PlayerFragment : Fragment() {
         }
 
         override fun onStopTrackingTouch(seekBar: SeekBar?) {
-            controller?.transportControls?.seekTo(resultProgress.toLong())
+            playerViewModel.transportControls?.seekTo(resultProgress.toLong())
             isUserTouching = false
         }
     }
@@ -259,7 +193,5 @@ class PlayerFragment : Fragment() {
     companion object {
         private const val TAG = "PlayerFragment"
         private const val CORNERS_RADIUS = 28
-
-        fun newInstance() = PlayerFragment()
     }
 }

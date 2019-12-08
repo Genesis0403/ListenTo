@@ -1,5 +1,6 @@
 package com.epam.listento.ui.cache
 
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -29,6 +30,7 @@ class AlbumsAdapter(
 
     override fun onBindViewHolder(holder: AlbumViewHolder, position: Int) {
         val item = getItem(position)
+        Log.d(TAG, "Binding album")
         holder.run {
             title.text = item.title
             artist.text = item.artist
@@ -68,6 +70,7 @@ class AlbumsAdapter(
     }
 
     private companion object {
+        private const val TAG = "AlbumsAdapter"
         private const val CORNERS_RADIUS = 16
     }
 }

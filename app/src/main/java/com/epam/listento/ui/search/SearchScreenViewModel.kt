@@ -1,6 +1,5 @@
 package com.epam.listento.ui.search
 
-import android.support.v4.media.session.PlaybackStateCompat
 import androidx.annotation.UiThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -8,6 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.epam.listento.R
+import com.epam.listento.ServiceHelper
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.Status
 import com.epam.listento.api.mapTrack
@@ -26,6 +26,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 
 class SearchScreenViewModel @Inject constructor(
+    val serviceHelper: ServiceHelper,
     private val tracksRepo: TracksRepository,
     private val musicRepo: MusicRepository,
     private val dispatchers: AppDispatchers
@@ -33,12 +34,6 @@ class SearchScreenViewModel @Inject constructor(
 
     private val _tracks: MutableLiveData<ApiResponse<List<Track>>> = MutableLiveData()
     val tracks: LiveData<ApiResponse<List<Track>>> get() = _tracks
-
-    private val _currentPlaying: MutableLiveData<Track> = MutableLiveData()
-    val currentPlaying: LiveData<Track> get() = _currentPlaying
-
-    private val _playbackState: MutableLiveData<PlaybackState> = MutableLiveData()
-    val playbackState: LiveData<PlaybackState> get() = _playbackState
 
     private val _command: MutableLiveData<Command> = SingleLiveEvent()
     val command: LiveData<Command> get() = _command
@@ -59,11 +54,11 @@ class SearchScreenViewModel @Inject constructor(
     @UiThread
     fun handleItemClick(track: Track) {
         viewModelScope.launch(dispatchers.ui) {
-            val current = currentPlaying.value
-            val state = playbackState.value
+            val current = serviceHelper.currentPlaying.value
+            val state = serviceHelper.playbackState.value
             _command.value = if (state != PlaybackState.Stopped &&
                 state != PlaybackState.Paused &&
-                current?.id == track.id
+                current == track.id
             ) {
                 Command.ShowPlayerActivity
             } else {
@@ -96,28 +91,9 @@ class SearchScreenViewModel @Inject constructor(
     }
 
     @UiThread
-    fun handleMetadataChange(trackId: Int) {
-        viewModelScope.launch(dispatchers.ui) {
-            _currentPlaying.value = withContext(dispatchers.default) {
-                tracks.value?.body?.find { it.id == trackId }
-            } ?: return@launch
-        }
-    }
-
-    @UiThread
-    fun handlePlaybackStateChange(state: Int) {
-        _playbackState.value = when (state) {
-            PlaybackStateCompat.STATE_PLAYING -> PlaybackState.Playing
-            PlaybackStateCompat.STATE_PAUSED -> PlaybackState.Paused
-            PlaybackStateCompat.STATE_STOPPED -> PlaybackState.Stopped
-            else -> PlaybackState.None
-        }
-    }
-
-    @UiThread
     fun handlePlayerStateChange(trackId: Int = -1) {
         viewModelScope.launch(dispatchers.default) {
-            val newRes = when (playbackState.value) {
+            val newRes = when (serviceHelper.playbackState.value) {
                 PlaybackState.Playing -> R.drawable.exo_icon_pause
                 PlaybackState.Paused -> R.drawable.exo_icon_play
                 else -> Track.NO_RES

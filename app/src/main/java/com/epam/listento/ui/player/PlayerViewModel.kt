@@ -1,17 +1,21 @@
 package com.epam.listento.ui.player
 
 import android.support.v4.media.MediaMetadataCompat
-import android.support.v4.media.session.PlaybackStateCompat
+import androidx.annotation.UiThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.epam.listento.R
+import com.epam.listento.ServiceHelper
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.model.player.utils.albumCover
 import com.epam.listento.model.player.utils.artist
 import com.epam.listento.model.player.utils.duration
 import com.epam.listento.model.player.utils.title
+import com.epam.listento.repository.global.MusicRepository
+import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -20,21 +24,22 @@ import javax.inject.Inject
 import javax.inject.Provider
 import kotlin.concurrent.schedule
 
-class PlayerViewModel @Inject constructor() : ViewModel() {
+class PlayerViewModel @Inject constructor(
+    val serviceHelper: ServiceHelper,
+    private val musicRepo: MusicRepository
+) : ViewModel() {
 
-    private val _currentPlaying = MutableLiveData<MetadataTrack>().also {
-        it.value = MetadataTrack()
-    }
-    val currentPlaying: LiveData<MetadataTrack> get() = _currentPlaying
+    val currentTrack get() = musicRepo.getCurrent().toMetadataTrack()
+    val transportControls get() = serviceHelper.transportControls
+    val progress get() = serviceHelper.progressMs
 
-    private val _playbackState = MutableLiveData<PlaybackState>().also {
-        it.value = PlaybackState.None
-    }
-    val playbackState: LiveData<PlaybackState> get() = _playbackState
+    private val _command: MutableLiveData<Command> = SingleLiveEvent()
+    val command: LiveData<Command> get() = _command
 
     private var timer: Timer? = null
     private var job: Job? = null
 
+    @UiThread
     fun startScheduler(action: () -> Unit) {
         timer?.let { return }
         timer = Timer().also {
@@ -46,38 +51,26 @@ class PlayerViewModel @Inject constructor() : ViewModel() {
         }
     }
 
+    @UiThread
     fun stopScheduler() {
         job?.cancel()
         timer?.cancel()
         timer = null
     }
 
-    fun handleMetadataChange(track: MetadataTrack) {
-        _currentPlaying.value = track
-    }
-
-    fun handlePlaybackStateChange(state: Int) {
-        val result = when (state) {
-            PlaybackStateCompat.STATE_PLAYING -> PlaybackState.Playing
-            PlaybackStateCompat.STATE_PAUSED -> PlaybackState.Paused
-            PlaybackStateCompat.STATE_STOPPED -> PlaybackState.Stopped
-            else -> PlaybackState.None
+    @UiThread
+    fun handleMediaButtonClick(id: Int) {
+        _command.value = when (id) {
+            R.id.playButton ->
+                if (serviceHelper.playbackState.value == PlaybackState.Playing) {
+                    Command.Pause
+                } else {
+                    Command.Play
+                }
+            R.id.forwardButton -> Command.Forward
+            R.id.rewindButton -> Command.Backward
+            else -> Command.None
         }
-        if (result != playbackState.value) {
-            _playbackState.value = result
-        }
-    }
-
-    fun handlePlayButtonClick() {
-        // TODO
-    }
-
-    fun handleForwardButton() {
-        // TODO
-    }
-
-    fun handleRewindButton() {
-        // TODO
     }
 
     data class MetadataTrack(
@@ -87,11 +80,12 @@ class PlayerViewModel @Inject constructor() : ViewModel() {
         val cover: String = ""
     )
 
-    sealed class PlayerAction {
-        object ShouldPlay : PlayerAction()
-        object ShouldPause : PlayerAction()
-        object ShouldSkipForward : PlayerAction()
-        object ShouldSkipBackward : PlayerAction()
+    sealed class Command {
+        object Play : Command()
+        object Pause : Command()
+        object Forward : Command()
+        object Backward : Command()
+        object None : Command()
     }
 
     class Factory @Inject constructor(

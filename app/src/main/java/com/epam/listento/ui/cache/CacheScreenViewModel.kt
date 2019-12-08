@@ -1,6 +1,5 @@
 package com.epam.listento.ui.cache
 
-import android.support.v4.media.session.PlaybackStateCompat
 import androidx.annotation.UiThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -9,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.epam.listento.R
+import com.epam.listento.ServiceHelper
 import com.epam.listento.db.TracksDao
 import com.epam.listento.domain.DomainTrack
 import com.epam.listento.model.CustomAlbum
@@ -26,6 +26,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 
 class CacheScreenViewModel @Inject constructor(
+    val serviceHelper: ServiceHelper,
     private val musicRepo: MusicRepository,
     private val mappers: PlatformMappers,
     private val dispatchers: AppDispatchers,
@@ -33,33 +34,25 @@ class CacheScreenViewModel @Inject constructor(
     dao: TracksDao
 ) : ViewModel() {
 
-    private val _currentPlaying = MutableLiveData<Track>()
-    val currentPlaying: LiveData<Track> get() = _currentPlaying
-
-    private val _playbackState = MutableLiveData<PlaybackState>()
-    val playbackState: LiveData<PlaybackState> get() = _playbackState
-
-    val albums: LiveData<List<CustomAlbum>> = albumsRepo.getAlbums()
-
     private val _command: MutableLiveData<Command> = SingleLiveEvent()
     val command: LiveData<Command> get() = _command
 
+    val albums: LiveData<List<CustomAlbum>> = albumsRepo.getAlbums()
+
     private val _tracks: MutableLiveData<List<Track>> =
         Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
-            MutableLiveData<List<Track>>().apply {
-                value = mapTracksToPlatform(domain)
-            }
+            MutableLiveData<List<Track>>(mapTracksToPlatform(domain))
         } as MutableLiveData
     val tracks: LiveData<List<Track>> get() = _tracks
 
     @UiThread
     fun handleTrackClick(track: Track) {
         viewModelScope.launch(dispatchers.ui) {
-            val current = currentPlaying.value
-            val state = playbackState.value
+            val current = serviceHelper.currentPlaying.value
+            val state = serviceHelper.playbackState.value
             _command.value = if (state != PlaybackState.Stopped &&
                 state != PlaybackState.Paused &&
-                current?.id == track.id
+                current == track.id
             ) {
                 Command.ShowPlayerActivity
             } else {
@@ -83,25 +76,6 @@ class CacheScreenViewModel @Inject constructor(
                 track.title,
                 artist
             )
-    }
-
-    @UiThread
-    fun handleMetadataChange(trackId: Int) {
-        viewModelScope.launch(dispatchers.ui) {
-            _currentPlaying.value = withContext(dispatchers.default) {
-                tracks.value?.find { it.id == trackId }
-            } ?: return@launch
-        }
-    }
-
-    @UiThread
-    fun handlePlaybackStateChange(state: Int) {
-        _playbackState.value = when (state) {
-            PlaybackStateCompat.STATE_PLAYING -> PlaybackState.Playing
-            PlaybackStateCompat.STATE_PAUSED -> PlaybackState.Paused
-            PlaybackStateCompat.STATE_STOPPED -> PlaybackState.Stopped
-            else -> PlaybackState.None
-        }
     }
 
     @UiThread
@@ -129,9 +103,9 @@ class CacheScreenViewModel @Inject constructor(
     }
 
     private fun getPlaybackRes(): Int {
-        return when (playbackState.value) {
-            PlaybackState.Playing -> R.drawable.lt_pause_icon
-            PlaybackState.Paused -> R.drawable.lt_play_icon
+        return when (serviceHelper.playbackState.value) {
+            PlaybackState.Playing -> R.drawable.exo_icon_pause
+            PlaybackState.Paused -> R.drawable.exo_icon_play
             else -> Track.NO_RES
         }
     }
@@ -142,7 +116,7 @@ class CacheScreenViewModel @Inject constructor(
         } else {
             tracks.mapNotNull {
                 val track = mappers.mapTrack(it)
-                if (track == currentPlaying.value) {
+                if (track?.id == serviceHelper.currentPlaying.value) {
                     track?.res = getPlaybackRes()
                 }
                 track

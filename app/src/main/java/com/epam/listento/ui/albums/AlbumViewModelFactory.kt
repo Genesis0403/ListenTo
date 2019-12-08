@@ -2,6 +2,7 @@ package com.epam.listento.ui.albums
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import com.epam.listento.ServiceHelper
 import com.epam.listento.repository.global.AlbumsRepository
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.utils.AppDispatchers
@@ -11,6 +12,7 @@ import com.squareup.inject.assisted.AssistedInject
 
 @Suppress("UNCHECKED_CAST")
 class AlbumViewModelFactory @AssistedInject constructor(
+    private val serviceHelper: ServiceHelper,
     private val contextProvider: ContextProvider,
     private val dispatchers: AppDispatchers,
     private val musicRepo: MusicRepository,
@@ -21,6 +23,7 @@ class AlbumViewModelFactory @AssistedInject constructor(
 
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
         return AlbumViewModel(
+            serviceHelper,
             contextProvider,
             dispatchers,
             musicRepo,

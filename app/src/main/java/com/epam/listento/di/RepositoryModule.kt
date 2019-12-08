@@ -21,7 +21,6 @@ import com.epam.listento.utils.mappers.PlatformMappersImpl
 import dagger.Binds
 import dagger.Module
 import dagger.Reusable
-import javax.inject.Singleton
 
 @Module(
     includes = [

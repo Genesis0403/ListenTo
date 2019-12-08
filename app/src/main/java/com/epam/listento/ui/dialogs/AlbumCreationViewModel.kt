@@ -70,7 +70,7 @@ class AlbumCreationViewModel @Inject constructor(
 
     @UiThread
     fun changeCover(url: String?) {
-        //TODO validate uri
+        // TODO validate uri
         _command.value = if (url.isNullOrEmpty()) {
             Command.ShowToast(context.getString(R.string.failed_to_get_image))
         } else {
