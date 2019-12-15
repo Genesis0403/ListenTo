@@ -57,7 +57,7 @@ object DownloadInteractorSpek : Spek({
         val id = 1
         val title = "title"
         val artist = "artist"
-        val trackName = "$artist-$title.mp3"
+        val trackName = "$artist-$title-$id.mp3"
         val filePath = "somewhere/$trackName"
 
         beforeEachTest {

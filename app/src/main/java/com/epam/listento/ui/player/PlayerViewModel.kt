@@ -15,6 +15,7 @@ import com.epam.listento.model.player.utils.artist
 import com.epam.listento.model.player.utils.duration
 import com.epam.listento.model.player.utils.title
 import com.epam.listento.repository.global.MusicRepository
+import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -26,7 +27,8 @@ import kotlin.concurrent.schedule
 
 class PlayerViewModel @Inject constructor(
     private val serviceHelper: ServiceHelper,
-    private val musicRepo: MusicRepository
+    private val musicRepo: MusicRepository,
+    private val dispatchers: AppDispatchers
 ) : ViewModel() {
 
     val currentTrack get() = musicRepo.getCurrent().toMetadataTrack()
@@ -44,10 +46,10 @@ class PlayerViewModel @Inject constructor(
 
     @UiThread
     fun startScheduler(action: () -> Unit) {
-        timer?.let { return }
+        if (timer != null) return
         timer = Timer().also {
             it.schedule(DELAY, DURATION_SECOND) {
-                job = viewModelScope.launch(Dispatchers.Main) {
+                job = viewModelScope.launch(dispatchers.ui) {
                     action()
                 }
             }.run()

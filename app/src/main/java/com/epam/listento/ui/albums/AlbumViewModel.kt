@@ -19,7 +19,7 @@ import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.launch
 
 class AlbumViewModel(
-    val serviceHelper: ServiceHelper,
+    private val serviceHelper: ServiceHelper,
     private val dispatchers: AppDispatchers,
     private val musicRepo: MusicRepository,
     val title: String,
@@ -27,15 +27,19 @@ class AlbumViewModel(
     id: Int
 ) : ViewModel() {
 
+    val tracks: LiveData<List<Track>> get() = _tracks
+    val command: LiveData<Command> get() = _command
+
+    val currentPlaying: LiveData<Int> get() = serviceHelper.currentPlaying
+    val playbackState: LiveData<PlaybackState> get() = serviceHelper.playbackState
+    val transportControls get() = serviceHelper.transportControls
+
+    private val _command: MutableLiveData<Command> = SingleLiveEvent()
     private val _tracks: MutableLiveData<List<Track>> =
         Transformations.switchMap(albumsRepo.getAlbumById(id)) {
             musicRepo.setSource(convertToMetadata(it.tracks))
             MutableLiveData(it.tracks)
         } as MutableLiveData
-    val tracks: LiveData<List<Track>> get() = _tracks
-
-    private val _command: MutableLiveData<Command> = SingleLiveEvent()
-    val command: LiveData<Command> get() = _command
 
     @UiThread
     fun handleClick(track: Track) {
@@ -55,7 +59,10 @@ class AlbumViewModel(
             val newRes = getPlaybackRes()
 
             val result = tracks.value?.map { track ->
-                val resId = if (track.id == trackId) newRes else Track.NO_RES
+                val resId = if (track.id == trackId)
+                    newRes
+                else
+                    Track.NO_RES
                 track.copy(res = resId)
             }
             _tracks.postValue(result)

@@ -77,20 +77,20 @@ class AlbumFragment :
             command.observe(viewLifecycleOwner, Observer<AlbumViewModel.Command> {
                 when (it) {
                     AlbumViewModel.Command.PlayTrack ->
-                        serviceHelper.transportControls?.play()
+                        transportControls?.play()
                     AlbumViewModel.Command.PauseTrack ->
-                        serviceHelper.transportControls?.pause()
+                        transportControls?.pause()
                 }
             })
 
-            serviceHelper.currentPlaying.observe(viewLifecycleOwner, Observer<Int> {
+            currentPlaying.observe(viewLifecycleOwner, Observer<Int> {
                 albumViewModel.handlePlayerStateChange(it)
             })
 
-            serviceHelper.playbackState.observe(
+            playbackState.observe(
                 viewLifecycleOwner,
                 Observer<PlaybackState> {
-                    handlePlayerStateChange(serviceHelper.currentPlaying.value ?: -1)
+                    handlePlayerStateChange(currentPlaying.value ?: -1)
                 }
             )
         }

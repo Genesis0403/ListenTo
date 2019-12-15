@@ -1,4 +1,4 @@
-package com.epam.listento.ui.dialogs
+package com.epam.listento.ui.albums
 
 import androidx.lifecycle.Observer
 import com.epam.listento.R
