@@ -66,6 +66,11 @@ class CacheScreenViewModel @Inject constructor(
     }
 
     @UiThread
+    fun handleAlbumLongClick(album: CustomAlbum) {
+        _command.value = Command.ShowAlbumDialog(album.id)
+    }
+
+    @UiThread
     fun handleAlbumClick(album: CustomAlbum) {
         _command.value = Command.ShowAlbumActivity(album.title, album.id, album.cover)
     }
@@ -95,14 +100,11 @@ class CacheScreenViewModel @Inject constructor(
     }
 
     private suspend fun changePlaylistAndPlayCurrent(track: Track) {
-        withContext(dispatchers.default) {
-            _tracks.value?.map { it.toMetadata() }?.let { metadata ->
-                withContext(dispatchers.ui) {
-                    musicRepo.setSource(metadata)
-                    musicRepo.setCurrent(track.toMetadata())
-                }
-            }
-        }
+        val metadata = withContext(dispatchers.default) {
+            tracks.value?.map { it.toMetadata() }
+        } ?: return
+        musicRepo.setSource(metadata)
+        musicRepo.setCurrent(track.toMetadata())
     }
 
     private fun getPlaybackRes(): Int {
@@ -131,6 +133,8 @@ class CacheScreenViewModel @Inject constructor(
         object ShowPlayerActivity : Command()
 
         object PlayTrack : Command()
+
+        class ShowAlbumDialog(id: Int) : Command()
 
         class ShowAlbumActivity(
             val title: String,

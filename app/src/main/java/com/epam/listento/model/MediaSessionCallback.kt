@@ -41,10 +41,11 @@ class MediaSessionCallback(
         .putLong(MediaMetadataCompat.METADATA_KEY_DURATION, EMPTY_DURATION)
         .build()
 
-    private var currentState = PlaybackStateCompat.STATE_STOPPED
-        @Synchronized set
+    var currentState = PlaybackStateCompat.STATE_STOPPED
+        @Synchronized private set
 
-    private var currentPlaying: MediaMetadataCompat? = null
+    var currentPlaying: MediaMetadataCompat? = null
+        private set
 
     override fun onPlay() {
         super.onPlay()
@@ -57,6 +58,7 @@ class MediaSessionCallback(
         val track = musicRepo.getCurrent()
 
         sessionJob = sessionScope.launch {
+            //TODO fillMetadata???
             val metadata = withContext(dispatchers.io) { downloadInteractor.fillMetadata(track) }
             onSessionUpdate(metadata, true, PlaybackStateCompat.STATE_PLAYING)
 
@@ -72,28 +74,27 @@ class MediaSessionCallback(
                     prepareToPlay(Uri.parse(result.body))
                     player.playWhenReady = true
                 }
-                currentState = PlaybackStateCompat.STATE_PLAYING
             }
         }
+        currentState = PlaybackStateCompat.STATE_PLAYING
     }
 
     override fun onPause() {
         super.onPause()
 
-        if (player.playWhenReady) {
-            player.playWhenReady = false
-        }
+        if (!player.playWhenReady) return
+        currentPlaying = musicRepo.getCurrent()
         onSessionUpdate(currentPlaying, true, PlaybackStateCompat.STATE_PAUSED)
         currentState = PlaybackStateCompat.STATE_PAUSED
+        player.playWhenReady = false
     }
 
     override fun onStop() {
         super.onStop()
 
-        if (player.playWhenReady) {
-            player.playWhenReady = false
-            player.release()
-        }
+        if (!player.playWhenReady) return
+        player.playWhenReady = false
+        player.release()
         onSessionUpdate(emptyMetadata, false, PlaybackStateCompat.STATE_STOPPED)
 
         currentState = PlaybackStateCompat.STATE_STOPPED

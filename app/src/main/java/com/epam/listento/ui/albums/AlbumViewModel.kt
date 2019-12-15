@@ -59,10 +59,7 @@ class AlbumViewModel(
             val newRes = getPlaybackRes()
 
             val result = tracks.value?.map { track ->
-                val resId = if (track.id == trackId)
-                    newRes
-                else
-                    Track.NO_RES
+                val resId = if (track.id == trackId) newRes else Track.NO_RES
                 track.copy(res = resId)
             }
             _tracks.postValue(result)

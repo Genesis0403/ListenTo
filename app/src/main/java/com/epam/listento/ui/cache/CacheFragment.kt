@@ -54,6 +54,10 @@ class CacheFragment :
         navController.navigate(R.id.action_cacheFragmentNav_to_albumCreationActivity2)
     }
 
+    override fun onLongClick(album: CustomAlbum) {
+        cacheViewModel.handleAlbumLongClick(album)
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App.component.inject(this)

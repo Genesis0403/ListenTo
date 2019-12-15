@@ -98,14 +98,11 @@ class SearchScreenViewModel @Inject constructor(
     }
 
     private suspend fun changePlaylistAndSetCurrent(track: Track) {
-        withContext(dispatchers.default) {
-            tracks.value?.body?.map { it.toMetadata() }?.let { metadata ->
-                withContext(dispatchers.ui) {
-                    musicRepo.setSource(metadata)
-                    musicRepo.setCurrent(track.toMetadata())
-                }
-            }
-        }
+        val metadata = withContext(dispatchers.default) {
+            tracks.value?.body?.map { it.toMetadata() }
+        } ?: return
+        musicRepo.setSource(metadata)
+        musicRepo.setCurrent(track.toMetadata())
     }
 
     private fun mapTracksAndPublish(response: ApiResponse<List<DomainTrack>>) {

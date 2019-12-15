@@ -4,4 +4,8 @@
         <item>Add to cache</item>
         <item>Remove from cache</item>
     </array>
+
+    <array name="album_cache_array">
+        <item>Remove from cache</item>
+    </array>
 </resources>

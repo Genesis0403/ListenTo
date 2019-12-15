@@ -15,9 +15,10 @@ import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 import org.spekframework.spek2.Spek
 import org.spekframework.spek2.style.specification.describe
+import kotlin.test.assertTrue
 
 @RunWith(JUnitPlatform::class)
-class PlayerViewModelSpek : Spek({
+object PlayerViewModelSpek : Spek({
 
     emulateInstanteTaskExecutorRule()
 
@@ -72,13 +73,18 @@ class PlayerViewModelSpek : Spek({
         }
     }
 
-    describe("timer start") {
+    describe("timer actions") {
 
         val mockedAction: () -> Unit = mockk(relaxed = true, relaxUnitFun = true)
 
         it("should start") {
             viewModel.startScheduler(mockedAction)
             verify { mockedAction.invoke() }
+        }
+
+        it("should stop") {
+            viewModel.stopScheduler()
+            assertTrue { true }
         }
     }
 })

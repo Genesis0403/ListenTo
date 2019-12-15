@@ -1,9 +1,13 @@
 package com.epam.listento.model
 
+import android.support.v4.media.MediaMetadataCompat
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.api.Status
 import com.epam.listento.domain.DomainStorage
 import com.epam.listento.domain.DomainTrack
+import com.epam.listento.model.player.utils.artist
+import com.epam.listento.model.player.utils.id
+import com.epam.listento.model.player.utils.title
 import com.epam.listento.repository.global.AudioRepository
 import com.epam.listento.repository.global.FileRepository
 import com.epam.listento.repository.global.StorageRepository
@@ -52,7 +56,7 @@ object DownloadInteractorSpek : Spek({
         )
     }
 
-    describe("track downloading") {
+    describe("track downloading with default parameters") {
 
         val id = 1
         val title = "title"
@@ -61,6 +65,171 @@ object DownloadInteractorSpek : Spek({
         val filePath = "somewhere/$trackName"
 
         beforeEachTest {
+            createInteractor()
+        }
+
+        afterEachTest {
+            clearAllMocks()
+        }
+
+        it("should exists") {
+
+            every { trackRepo.checkTrackExistence(trackName) } returns true
+            every { trackRepo.fetchTrackPath(trackName) } returns filePath
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isSuccess() }
+                assertTrue { response.body == filePath }
+            }
+        }
+
+        it("should fetch track") {
+
+            val storage = "some_storage"
+            val url = "someUrl"
+
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { trackRepo.fetchTrack(id, true) } returns trackResponse
+            every { trackResponse.status } returns Status.SUCCESS
+            every { trackResponse.body } returns domainTrack
+            every { trackResponse.body?.storageDir } returns storage
+
+            coEvery { storageRepo.fetchStorage(storage) } returns storageResponse
+            every { storageResponse.status } returns Status.SUCCESS
+            every { storageResponse.body } returns domainStorage
+
+            every { audioRepo.fetchAudioUrl(domainStorage) } returns url
+
+            coEvery { fileRepo.downloadTrack(trackName, url) } returns fileResponse
+            every { fileResponse.status } returns Status.SUCCESS
+            every { fileResponse.body } returns filePath
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isSuccess() }
+                assertTrue { response.body == filePath }
+            }
+        }
+
+        it("should throw error after fetching when status is error") {
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { trackRepo.fetchTrack(id, true) } returns trackResponse
+            every { trackResponse.status } returns Status.ERROR
+            every { trackResponse.body } returns domainTrack
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+
+        it("should throw error after fetching when body is null") {
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { trackRepo.fetchTrack(id, true) } returns trackResponse
+            every { trackResponse.status } returns Status.SUCCESS
+            every { trackResponse.body } returns null
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+
+        it("should throw error after storage fetching when status is error") {
+
+            val storage = "some_storage"
+
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { trackRepo.fetchTrack(id, true) } returns trackResponse
+            every { trackResponse.status } returns Status.SUCCESS
+            every { trackResponse.body } returns domainTrack
+            every { trackResponse.body?.storageDir } returns storage
+
+            coEvery { storageRepo.fetchStorage(storage) } returns storageResponse
+            every { storageResponse.status } returns Status.ERROR
+            every { storageResponse.body } returns null
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+
+        it("should throw error after storage fetching when body is null") {
+
+            val storage = "some_storage"
+
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { trackRepo.fetchTrack(id, true) } returns trackResponse
+            every { trackResponse.status } returns Status.SUCCESS
+            every { trackResponse.body } returns domainTrack
+            every { trackResponse.body?.storageDir } returns storage
+
+            coEvery { storageRepo.fetchStorage(storage) } returns storageResponse
+            every { storageResponse.status } returns Status.SUCCESS
+            every { storageResponse.body } returns null
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+
+        it("should throw error after downloading when status is error") {
+
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { interactor["fetchTrack"](id, true) } returns fileResponse
+            every { fileResponse.status } returns Status.ERROR
+            every { fileResponse.body } returns null
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+
+        it("should throw error after downloading when body is null") {
+
+            every { trackRepo.checkTrackExistence(trackName) } returns false
+
+            coEvery { interactor["fetchTrack"](id, true) } returns fileResponse
+            every { fileResponse.status } returns Status.SUCCESS
+            every { fileResponse.body } returns null
+
+            runBlocking {
+                val response = interactor.downloadTrack(id, title, artist)
+                assertTrue { response.status.isError() }
+                assertTrue { response.body == null }
+            }
+        }
+    }
+
+    describe("track downloading with metadata") {
+
+        val id = 1
+        val title = "title"
+        val artist = "artist"
+        val trackName = "$artist-$title-$id.mp3"
+        val filePath = "somewhere/$trackName"
+
+        val metadata = mockk<MediaMetadataCompat>(relaxed = true)
+
+        beforeEachTest {
+            every { metadata.id } returns id.toString()
+            every { metadata.title } returns title
+            every { metadata.artist } returns artist
             createInteractor()
         }
 

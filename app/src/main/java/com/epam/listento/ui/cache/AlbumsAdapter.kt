@@ -60,13 +60,22 @@ class AlbumsAdapter(
         init {
             cardView.setOnClickListener {
                 if (adapterPosition == RecyclerView.NO_POSITION) return@setOnClickListener
-                listener.onClick(getItem(adapterPosition))
+            }
+
+            cardView.setOnLongClickListener {
+                if (adapterPosition == RecyclerView.NO_POSITION) {
+                    false
+                } else {
+                    listener.onLongClick(getItem(adapterPosition))
+                    true
+                }
             }
         }
     }
 
     interface OnClickListener {
         fun onClick(album: CustomAlbum)
+        fun onLongClick(album: CustomAlbum)
     }
 
     private companion object {
