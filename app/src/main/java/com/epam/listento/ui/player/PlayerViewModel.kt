@@ -25,13 +25,16 @@ import javax.inject.Provider
 import kotlin.concurrent.schedule
 
 class PlayerViewModel @Inject constructor(
-    val serviceHelper: ServiceHelper,
+    private val serviceHelper: ServiceHelper,
     private val musicRepo: MusicRepository
 ) : ViewModel() {
 
     val currentTrack get() = musicRepo.getCurrent().toMetadataTrack()
     val transportControls get() = serviceHelper.transportControls
     val progress get() = serviceHelper.progressMs
+
+    val currentPlaying: LiveData<Int> get() = serviceHelper.currentPlaying
+    val playbackState: LiveData<PlaybackState> get() = serviceHelper.playbackState
 
     private val _command: MutableLiveData<Command> = SingleLiveEvent()
     val command: LiveData<Command> get() = _command

@@ -30,4 +30,7 @@
     <string name="track_is_in_list">Track is already in list.</string>
     <string name="albums">Albums</string>
     <string name="tracks">Tracks</string>
+    <string name="wront_album_name">Wrong album name.</string>
+    <string name="wrong_artist_name">Wrong artist name.</string>
+    <string name="album_size_less_1">Choose at least 1 track.</string>
 </resources>

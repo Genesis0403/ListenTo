@@ -32,6 +32,13 @@
                     app:exitAnim="@anim/nav_default_exit_anim"
                     app:popEnterAnim="@anim/nav_default_pop_enter_anim"
                     app:popExitAnim="@anim/nav_default_pop_exit_anim" />
+            <action
+                    android:id="@+id/action_cacheFragmentNav_to_albumCreationActivity2"
+                    app:destination="@id/albumCreationActivity2"
+                    app:enterAnim="@anim/nav_default_enter_anim"
+                    app:exitAnim="@anim/nav_default_exit_anim"
+                    app:popEnterAnim="@anim/nav_default_pop_enter_anim"
+                    app:popExitAnim="@anim/nav_default_pop_exit_anim" />
         </fragment>
         <action android:id="@+id/action_global_playerActivity32"
                 app:destination="@id/playerActivity"
@@ -39,7 +46,7 @@
         <action android:id="@+id/action_global_playerActivity2" app:destination="@id/playerActivity"/>
         <fragment
                 android:id="@+id/albumCreationDialog"
-                android:name="com.epam.listento.ui.dialogs.AlbumCreationDialog"
+                android:name="com.epam.listento.ui.albums.AlbumCreationFragment"
                 android:label="AlbumCreationDialog" />
         <activity
                 android:id="@+id/albumActivity"
@@ -56,6 +63,10 @@
                     android:name="coverUrl"
                     app:argType="string" />
         </activity>
+        <activity
+                android:id="@+id/albumCreationActivity2"
+                android:name="com.epam.listento.ui.albums.AlbumCreationActivity"
+                android:label="AlbumCreationActivity" />
     </navigation>
     <navigation android:id="@+id/preferencesFragment" app:startDestination="@id/prefFragment" android:label="Settings">
         <fragment
@@ -65,11 +76,11 @@
     </navigation>
     <activity android:id="@+id/playerActivity" android:name="com.epam.listento.ui.player.PlayerActivity"
               android:label="player_activity" tools:layout="@layout/player_activity"/>
-    <dialog android:id="@+id/trackDialog" android:name="com.epam.listento.ui.dialogs.TrackDialog" android:label="TrackDialog">
+    <fragment android:id="@+id/trackDialog" android:name="com.epam.listento.ui.dialogs.TrackDialog" android:label="TrackDialog">
         <argument android:name="id" app:argType="integer" android:defaultValue="-1"/>
         <argument android:name="title" app:argType="string"/>
         <argument android:name="artist" app:argType="string"/>
-    </dialog>
+    </fragment>
     <action android:id="@+id/action_track_dialog" app:destination="@id/trackDialog"
             app:enterAnim="@anim/nav_default_enter_anim" app:exitAnim="@anim/nav_default_exit_anim"
             app:popEnterAnim="@anim/nav_default_pop_enter_anim" app:popExitAnim="@anim/nav_default_pop_exit_anim"

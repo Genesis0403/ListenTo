@@ -1,12 +1,10 @@
 package com.epam.listento
 
 import android.app.Application
-import android.content.Intent
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.preference.PreferenceManager
 import com.epam.listento.di.AppComponent
 import com.epam.listento.di.DaggerAppComponent
-import com.epam.listento.model.PlayerService
 
 class App : Application() {
 
@@ -18,11 +16,6 @@ class App : Application() {
         setUiMode()
     }
 
-    override fun onTerminate() {
-        super.onTerminate()
-        stopService(Intent(this, PlayerService::class.java))
-    }
-
     private fun setUiMode() {
         val sp = PreferenceManager.getDefaultSharedPreferences(this)
         val isNightMode = sp.getBoolean(getString(R.string.night_mode_key), false)
@@ -32,6 +25,7 @@ class App : Application() {
     }
 
     companion object {
+        private const val TAG = "ListenToApp"
         private lateinit var _component: AppComponent
         val component: AppComponent get() = _component
     }

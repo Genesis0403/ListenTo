@@ -89,6 +89,7 @@ class PlayerService : Service() {
     private lateinit var mediaSession: MediaSessionCompat
 
     override fun onBind(intent: Intent?): IBinder? {
+        Log.d(TAG, "onBind")
         return PlayerBinder()
     }
 
@@ -104,8 +105,14 @@ class PlayerService : Service() {
     }
 
     override fun onCreate() {
-        App.component.inject(this)
         super.onCreate()
+        App.component.inject(this)
+        Log.d(TAG, "onCreate")
+
+        registerReceiver(
+            becomeNoisyReceiver,
+            IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+        )
 
         val attributes = AudioAttributes.Builder()
             .setUsage(C.USAGE_MEDIA)
@@ -147,17 +154,32 @@ class PlayerService : Service() {
         }
     }
 
+    override fun onTaskRemoved(rootIntent: Intent?) {
+        super.onTaskRemoved(rootIntent)
+        Log.d(TAG, "onTaskRemoved")
+        controller.transportControls?.stop()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.d(TAG, "onDestroy")
+        unregisterReceiver(becomeNoisyReceiver)
+        mediaSessionCallback = null
+        controller.unregisterCallback(callback)
+        updateSessionData(false, PlaybackStateCompat.STATE_NONE)
+        mediaSession.setCallback(null)
+        mediaSession.release()
+    }
+
     private fun updateSessionData(isActive: Boolean, state: Int) {
-        mediaSession.run {
-            this.isActive = isActive
-            setPlaybackState(
-                stateBuilder.setState(
-                    state,
-                    PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
-                    1f
-                ).build()
-            )
-        }
+        mediaSession.isActive = isActive
+        mediaSession.setPlaybackState(
+            stateBuilder.setState(
+                state,
+                PlaybackStateCompat.PLAYBACK_POSITION_UNKNOWN,
+                1f
+            ).build()
+        )
     }
 
     private fun initMediaSession(): MediaSessionCompat {
@@ -184,50 +206,29 @@ class PlayerService : Service() {
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
-        Log.d(TAG, "ON DESTROY")
-        controller.unregisterCallback(callback)
-        mediaSession.isActive = false
-        mediaSession.setCallback(null)
-        mediaSession.release()
-    }
-
     private fun updateNotification(state: PlaybackStateCompat) {
 
         val notification: Notification? = if (controller.metadata != null) {
-            mediaSession.let { notificationBuilder.buildNotification(it.sessionToken) }
+            notificationBuilder.buildNotification(mediaSession.sessionToken)
         } else {
             null
         }
 
         when (state.state) {
-            PlaybackStateCompat.STATE_PLAYING,
-            PlaybackStateCompat.STATE_BUFFERING -> {
-
-                registerReceiver(
-                    becomeNoisyReceiver,
-                    IntentFilter(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
-                )
-
-                if (notification != null) {
-                    notificationManager.notify(NOTIFICATION_ID, notification)
-                    if (!isForeground) {
-                        ContextCompat.startForegroundService(
-                            applicationContext,
-                            Intent(this, PlayerService::class.java)
-                        )
-                        startForeground(NOTIFICATION_ID, notification)
-                        isForeground = true
-                    }
+            PlaybackStateCompat.STATE_PLAYING -> {
+                if (notification == null) return
+                notificationManager.notify(NOTIFICATION_ID, notification)
+                if (!isForeground) {
+                    ContextCompat.startForegroundService(
+                        applicationContext,
+                        Intent(this, PlayerService::class.java)
+                    )
+                    startForeground(NOTIFICATION_ID, notification)
+                    isForeground = true
                 }
             }
             else -> {
-                try {
-                    unregisterReceiver(becomeNoisyReceiver)
-                } catch (e: Exception) {
-                }
-
+                Log.d(TAG, "Playback state is $state")
                 if (isForeground) {
                     stopForeground(false)
                     isForeground = false
@@ -239,6 +240,8 @@ class PlayerService : Service() {
                     }
                 }
                 if (state.state == PlaybackStateCompat.STATE_STOPPED) {
+                    Log.d(TAG, "Playback state is STOPPED")
+                    stopForeground(true)
                     stopSelf()
                 }
             }

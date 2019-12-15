@@ -42,8 +42,11 @@ class SearchFragment :
         searchScreenViewModel.handleItemClick(track)
     }
 
+    override fun onMenuClick(track: Track) {
+        searchScreenViewModel.handleTheeDotMenuClick(track)
+    }
+
     override fun onLongClick(track: Track) {
-        searchScreenViewModel.handleLongItemClick(track)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -70,9 +73,6 @@ class SearchFragment :
         initObservers()
     }
 
-    override fun onMenuClick(track: Track) {
-    }
-
     private fun listenToSearchViewQuery(searchView: SearchView) {
         searchView.setOnQueryTextListener(DebounceSearchListener(this.lifecycle) { query ->
             progressBar.isVisible = true
@@ -96,14 +96,14 @@ class SearchFragment :
                 progressBar.isVisible = false
             })
 
-            serviceHelper.currentPlaying.observe(viewLifecycleOwner, Observer<Int> {
+            currentPlaying.observe(viewLifecycleOwner, Observer<Int> {
                 handlePlayerStateChange(it)
             })
 
-            serviceHelper.playbackState.observe(
+            playbackState.observe(
                 viewLifecycleOwner,
                 Observer<PlaybackState> {
-                    handlePlayerStateChange(serviceHelper.currentPlaying.value ?: -1)
+                    handlePlayerStateChange(currentPlaying.value ?: -1)
                 }
             )
 
@@ -116,7 +116,7 @@ class SearchFragment :
                         SearchScreenViewModel.Command.ShowPlayerActivity ->
                             navController.navigate(R.id.playerActivity)
                         SearchScreenViewModel.Command.PlayTrack ->
-                            serviceHelper.transportControls?.play()
+                            transportControls?.play()
                         is SearchScreenViewModel.Command.ShowCacheDialog -> {
                             val actionId = TrackDialogDirections.actionTrackDialog(
                                 action.id,
@@ -132,6 +132,5 @@ class SearchFragment :
 
     companion object {
         private const val TAG = "SEARCH_FRAGMENT"
-        private const val SEARCH_QUERY_MAX = 30
     }
 }

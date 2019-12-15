@@ -2,6 +2,7 @@ package com.epam.listento.ui
 
 import androidx.lifecycle.Observer
 import com.epam.listento.R
+import com.epam.listento.ServiceHelper
 import com.epam.listento.api.ApiResponse
 import com.epam.listento.db.AppDatabase
 import com.epam.listento.db.TracksDao
@@ -42,6 +43,7 @@ object TrackCachingSpek : Spek({
     val trackRepo: TrackRepository = mockk(relaxed = true)
     val db: AppDatabase = mockk(relaxed = true)
     val dao: TracksDao = mockk(relaxed = true)
+    val serviceHelper: ServiceHelper = mockk(relaxed = true)
     val dispatchers = TestDispatchers()
 
     val toastObserver: Observer<String> = mockk(relaxed = true)
@@ -70,7 +72,8 @@ object TrackCachingSpek : Spek({
         contextProvider,
         cacheInteractor,
         downloadInteractor,
-        dispatchers
+        dispatchers,
+        serviceHelper
     )
 
     val mockedId = 1

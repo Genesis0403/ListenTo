@@ -1,4 +1,4 @@
-package com.epam.listento.ui.dialogs
+package com.epam.listento.ui.albums
 
 import android.content.Context
 import android.os.Environment
@@ -48,11 +48,18 @@ class AlbumCreationViewModel @Inject constructor(
     fun onMenuItemClick(itemId: Int): Boolean {
         return when (itemId) {
             R.id.saveItem -> {
-                _command.value = Command.SaveAlbum
+                _command.value =
+                    Command.SaveAlbum
                 true
             }
             R.id.addImage -> {
-                _command.value = Command.ChangeCover
+                _command.value =
+                    Command.ChangeCover
+                true
+            }
+            android.R.id.home -> {
+                _command.value =
+                    Command.CloseActivity
                 true
             }
             else -> false
@@ -70,7 +77,6 @@ class AlbumCreationViewModel @Inject constructor(
 
     @UiThread
     fun changeCover(url: String?) {
-        // TODO validate uri
         _command.value = if (url.isNullOrEmpty()) {
             Command.ShowToast(context.getString(R.string.failed_to_get_image))
         } else {
@@ -81,7 +87,14 @@ class AlbumCreationViewModel @Inject constructor(
 
     @UiThread
     fun saveAlbum(title: String, artist: String) {
-        if (isNotValidTitleAndArtistLength(title.length, artist.length)) return
+        if (isNotValidTitleAndArtistLength(title.length, artist.length)) {
+            _command.value = Command.ShowErrorOnQuery
+            return
+        }
+        if (_checkedTracks.isEmpty()) {
+            _command.value = Command.ShowToast(context.getString(R.string.album_size_less_1))
+            return
+        }
         viewModelScope.launch(dispatchers.ui) {
             val childDir = "${context.getString(R.string.app_local_dir)}/$title-$artist/"
             checkedTracks.forEach {
@@ -99,31 +112,25 @@ class AlbumCreationViewModel @Inject constructor(
         return if (dir.exists()) null else dir
     }
 
-    @MainThread
     private suspend fun addAlbumIntoCache(title: String, artist: String) {
         withContext(dispatchers.io) {
             albumsRepo.addAlbum(
                 CustomAlbum(title, artist, cover, _checkedTracks)
             )
         }
-        _command.value = Command.CloseDialog
+        _command.value = Command.CloseActivity
     }
 
     private fun isNotValidTitleAndArtistLength(title: Int, artist: Int): Boolean {
-        return if (title !in TITLE_MIN_LENGTH..TITLE_MAX_LENGTH ||
+        return title !in TITLE_MIN_LENGTH..TITLE_MAX_LENGTH ||
             artist !in ARTIST_MIN_LENGTH..ARTIST_MAX_LENGTH
-        ) {
-            _command.value = Command.ShowToast(context.getString(R.string.incorrect_length_toast))
-            true
-        } else {
-            false
-        }
     }
 
     sealed class Command {
         object SaveAlbum : Command()
         object ChangeCover : Command()
-        object CloseDialog : Command()
+        object CloseActivity : Command()
+        object ShowErrorOnQuery : Command()
         class LoadImage(val uri: String) : Command()
         class ShowToast(val message: String) : Command()
     }

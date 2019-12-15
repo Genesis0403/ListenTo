@@ -76,7 +76,7 @@ class PlayerFragment : Fragment(R.layout.player_fragment) {
     }
 
     private fun initOnSkipListener(action: () -> Unit) {
-        val state = playerViewModel.serviceHelper.playbackState.value
+        val state = playerViewModel.playbackState.value
         if (state == PlaybackState.Playing || state == PlaybackState.Paused) {
             action()
             trackTimeProgress.progress = 0
@@ -104,13 +104,13 @@ class PlayerFragment : Fragment(R.layout.player_fragment) {
     private fun initObservers() {
         with(playerViewModel) {
 
-            serviceHelper.currentPlaying.observe(
+            currentPlaying.observe(
                 viewLifecycleOwner,
                 Observer<Int> {
                     displayTrack(currentTrack)
                 })
 
-            serviceHelper.playbackState.observe(
+            playbackState.observe(
                 viewLifecycleOwner,
                 Observer<PlaybackState> {
                     restorePlayButtonState(it)

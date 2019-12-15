@@ -26,7 +26,7 @@ import javax.inject.Inject
 import javax.inject.Provider
 
 class CacheScreenViewModel @Inject constructor(
-    val serviceHelper: ServiceHelper,
+    private val serviceHelper: ServiceHelper,
     private val musicRepo: MusicRepository,
     private val mappers: PlatformMappers,
     private val dispatchers: AppDispatchers,
@@ -34,16 +34,19 @@ class CacheScreenViewModel @Inject constructor(
     dao: TracksDao
 ) : ViewModel() {
 
-    private val _command: MutableLiveData<Command> = SingleLiveEvent()
+    val currentPlaying: LiveData<Int> get() = serviceHelper.currentPlaying
+    val playbackState: LiveData<PlaybackState> get() = serviceHelper.playbackState
+    val transportControls = serviceHelper.transportControls
+
     val command: LiveData<Command> get() = _command
-
     val albums: LiveData<List<CustomAlbum>> = albumsRepo.getAlbums()
+    val tracks: LiveData<List<Track>> get() = _tracks
 
+    private val _command: MutableLiveData<Command> = SingleLiveEvent()
     private val _tracks: MutableLiveData<List<Track>> =
         Transformations.switchMap(dao.getLiveDataTracks()) { domain ->
             MutableLiveData<List<Track>>(mapTracksToPlatform(domain))
         } as MutableLiveData
-    val tracks: LiveData<List<Track>> get() = _tracks
 
     @UiThread
     fun handleTrackClick(track: Track) {
@@ -83,7 +86,7 @@ class CacheScreenViewModel @Inject constructor(
         viewModelScope.launch(dispatchers.default) {
             val newRes = getPlaybackRes()
 
-            val result = _tracks.value?.map { track ->
+            val result = tracks.value?.map { track ->
                 val resId = if (track.id == trackId) newRes else Track.NO_RES
                 track.copy(res = resId)
             }

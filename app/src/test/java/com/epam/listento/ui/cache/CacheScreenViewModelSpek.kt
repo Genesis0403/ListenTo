@@ -1,23 +1,26 @@
 package com.epam.listento.ui.cache
 
-import android.support.v4.media.session.PlaybackStateCompat
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
+import com.epam.listento.R
+import com.epam.listento.ServiceHelper
 import com.epam.listento.db.TracksDao
+import com.epam.listento.domain.DomainTrack
 import com.epam.listento.model.Album
 import com.epam.listento.model.Artist
+import com.epam.listento.model.CustomAlbum
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.repository.global.AlbumsRepository
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.utils.AppDispatchers
 import com.epam.listento.utils.PlatformMappers
+import com.epam.listento.utils.TestDispatchers
 import com.epam.listento.utils.emulateInstanteTaskExecutorRule
 import io.mockk.clearMocks
 import io.mockk.every
 import io.mockk.mockk
-import io.mockk.spyk
 import io.mockk.verify
-import kotlinx.coroutines.Dispatchers
 import org.junit.platform.runner.JUnitPlatform
 import org.junit.runner.RunWith
 import org.spekframework.spek2.Spek
@@ -33,11 +36,11 @@ object CacheScreenViewModelSpek : Spek({
     val albumsRepo: AlbumsRepository = mockk(relaxed = true)
     val mappers: PlatformMappers = mockk(relaxed = true)
     val dao: TracksDao = mockk(relaxed = true)
-    val dispatchers: AppDispatchers = mockk(relaxed = true)
+    val dispatchers: AppDispatchers = TestDispatchers()
+    val serviceHelper: ServiceHelper = mockk(relaxed = true)
 
-    var stateObserver: Observer<PlaybackState> = mockk(relaxed = true)
     var commandObserver: Observer<CacheScreenViewModel.Command> = mockk(relaxed = true)
-    var currentObserver: Observer<Track> = mockk(relaxed = true)
+    val tracksObserver: Observer<List<Track>> = mockk(relaxed = true)
 
     val currentTrack: Track = mockk(relaxed = true)
     val artist: Artist = mockk(relaxed = true)
@@ -62,28 +65,17 @@ object CacheScreenViewModelSpek : Spek({
     )
 
     fun createViewModel() {
-        viewModel = spyk(
-            CacheScreenViewModel(
-                musicRepo,
-                mappers,
-                dispatchers,
-                albumsRepo,
-                dao
-            )
+        viewModel = CacheScreenViewModel(
+            serviceHelper,
+            musicRepo,
+            mappers,
+            dispatchers,
+            albumsRepo,
+            dao
         )
     }
 
-    beforeEachTest {
-        every { dispatchers.ui } returns Dispatchers.Unconfined
-        every { dispatchers.default } returns Dispatchers.Unconfined
-        every { dispatchers.io } returns Dispatchers.Unconfined
-    }
-
-    afterEachTest {
-        clearMocks(dispatchers)
-    }
-
-    describe("item click") {
+    describe("track item click") {
 
         val fakeId = 2
         val track = Track(
@@ -100,17 +92,17 @@ object CacheScreenViewModelSpek : Spek({
             createViewModel()
             commandObserver = mockk(relaxed = true)
             viewModel.command.observeForever(commandObserver)
-            every { viewModel.playbackState.value } returns PlaybackState.Playing
-            every { viewModel.currentPlaying.value } returns currentTrack
             every { currentTrack.id } returns mockedId
+            every { serviceHelper.playbackState.value } returns PlaybackState.Playing
+            every { serviceHelper.currentPlaying.value } returns currentTrack.id
         }
 
         afterEachTest {
             viewModel.command.removeObserver(commandObserver)
-            clearMocks(commandObserver)
+            clearMocks(commandObserver, serviceHelper)
         }
 
-        it("should navigate to player") {
+        it("should open player activity") {
             viewModel.handleTrackClick(mockedTrack)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.ShowPlayerActivity) }
         }
@@ -121,21 +113,21 @@ object CacheScreenViewModelSpek : Spek({
         }
 
         it("should play track when ids are not equals") {
-            every { viewModel.playbackState.value } returns PlaybackState.Playing
+            every { serviceHelper.playbackState.value } returns PlaybackState.Playing
             viewModel.handleTrackClick(track)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }
 
         it("should play track when state is stopped") {
             every { currentTrack.id } returns fakeId
-            every { viewModel.playbackState.value } returns PlaybackState.Stopped
+            every { serviceHelper.playbackState.value } returns PlaybackState.Stopped
             viewModel.handleTrackClick(track)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }
 
         it("should play track when state is paused") {
             every { currentTrack.id } returns fakeId
-            every { viewModel.playbackState.value } returns PlaybackState.Paused
+            every { serviceHelper.playbackState.value } returns PlaybackState.Paused
             viewModel.handleTrackClick(track)
             verify { commandObserver.onChanged(CacheScreenViewModel.Command.PlayTrack) }
         }
@@ -161,58 +153,102 @@ object CacheScreenViewModelSpek : Spek({
         }
     }
 
-    describe("metadata changes") {
+    describe("album item click") {
+
+        val mockedAlbum: CustomAlbum = mockk(relaxed = true)
 
         beforeEachTest {
-            currentObserver = mockk(relaxed = true)
             createViewModel()
-            viewModel.currentPlaying.observeForever(currentObserver)
-            every { viewModel.tracks.value } returns listOf(mockedTrack)
+            commandObserver = mockk(relaxed = true)
+            viewModel.command.observeForever(commandObserver)
+            every { artist.name } returns ""
         }
 
         afterEachTest {
-            viewModel.currentPlaying.removeObserver(currentObserver)
-            clearMocks(musicRepo, currentObserver)
+            viewModel.command.removeObserver(commandObserver)
+            clearMocks(commandObserver, mockedAlbum)
         }
 
-        it("should change current playing") {
-            viewModel.handleMetadataChange(mockedId)
-            verify { currentObserver.onChanged(mockedTrack) }
-        }
-
-        it("should not change") {
-            val fakeId = -1
-            viewModel.handleMetadataChange(fakeId)
-            verify(inverse = true) { currentObserver.onChanged(mockedTrack) }
+        it("should open album") {
+            viewModel.handleAlbumClick(mockedAlbum)
+            val value = viewModel.command.value
+            assertTrue {
+                value is CacheScreenViewModel.Command.ShowAlbumActivity &&
+                        value.cover == mockedAlbum.cover &&
+                        value.id == mockedAlbum.id &&
+                        value.title == mockedAlbum.title
+            }
         }
     }
 
-    describe("playback state changes") {
+    describe("3dot menu click") {
 
         beforeEachTest {
             createViewModel()
-            stateObserver = mockk(relaxed = true)
-            viewModel.playbackState.observeForever(stateObserver)
+            commandObserver = mockk(relaxed = true)
+            viewModel.command.observeForever(commandObserver)
+            every { artist.name } returns ""
         }
 
         afterEachTest {
-            viewModel.playbackState.removeObserver(stateObserver)
-            clearMocks(stateObserver)
+            viewModel.command.removeObserver(commandObserver)
+            clearMocks(commandObserver)
         }
 
-        it("should be playing") {
-            viewModel.handlePlaybackStateChange(PlaybackStateCompat.STATE_PLAYING)
-            verify { stateObserver.onChanged(PlaybackState.Playing) }
+        it("should show cache dialog") {
+            viewModel.handleThreeDotButtonClick(mockedTrack)
+            val value = viewModel.command.value
+            assertTrue {
+                value is CacheScreenViewModel.Command.ShowCacheDialog &&
+                        value.id == mockedTrack.id &&
+                        value.title == mockedTrack.title &&
+                        value.artist == mockedTrack.artist?.name
+            }
+        }
+    }
+
+    describe("player state change") {
+
+        val domainTrack = mockk<DomainTrack>(relaxed = true)
+        val mockedDomainTracks = listOf(domainTrack)
+
+        beforeEachTest {
+            every { mappers.mapTrack(domainTrack) } returns mockedTrack
+            every { serviceHelper.currentPlaying.value } returns -1
+            every { dao.getLiveDataTracks() } returns MutableLiveData(mockedDomainTracks)
+            createViewModel()
+            viewModel.tracks.observeForever(tracksObserver)
         }
 
-        it("should be paused") {
-            viewModel.handlePlaybackStateChange(PlaybackStateCompat.STATE_PAUSED)
-            verify { stateObserver.onChanged(PlaybackState.Paused) }
+        afterEachTest {
+            clearMocks(tracksObserver, serviceHelper, domainTrack, mappers, dao)
         }
 
-        it("should be stopped") {
-            viewModel.handlePlaybackStateChange(PlaybackStateCompat.STATE_STOPPED)
-            verify { stateObserver.onChanged(PlaybackState.Stopped) }
+        it("should post tracks where track has pause icon") {
+            every { serviceHelper.playbackState.value } returns PlaybackState.Playing
+            viewModel.handlePlayerStateChange(mockedId)
+
+            assertTrue {
+                viewModel.tracks.value?.lastOrNull()?.res == R.drawable.exo_icon_pause
+            }
+        }
+
+        it("should post tracks where track has play icon") {
+            every { serviceHelper.playbackState.value } returns PlaybackState.Paused
+            viewModel.handlePlayerStateChange(mockedId)
+
+            assertTrue {
+                viewModel.tracks.value?.lastOrNull()?.res == R.drawable.exo_icon_play
+            }
+        }
+
+        it("should post tracks where track doesn't have icon") {
+            every { serviceHelper.playbackState.value } returns PlaybackState.Paused
+            viewModel.handlePlayerStateChange(-1)
+
+            assertTrue {
+                viewModel.tracks.value?.lastOrNull()?.res == Track.NO_RES
+            }
         }
     }
 })

@@ -1,5 +1,6 @@
 package com.epam.listento.ui
 
+import android.util.Log
 import androidx.annotation.UiThread
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.lifecycle.LiveData
@@ -8,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.epam.listento.R
+import com.epam.listento.ServiceHelper
 import com.epam.listento.model.CacheInteractor
 import com.epam.listento.model.DownloadInteractor
 import com.epam.listento.utils.AppDispatchers
@@ -23,7 +25,8 @@ class MainViewModel @Inject constructor(
     private val contextProvider: ContextProvider,
     private val cacheInteractor: CacheInteractor,
     private val downloadInteractor: DownloadInteractor,
-    private val dispatchers: AppDispatchers
+    private val dispatchers: AppDispatchers,
+    private val serviceHelper: ServiceHelper
 ) : ViewModel() {
 
     private val _nightMode: MutableLiveData<Int> = SingleLiveEvent()
@@ -31,6 +34,16 @@ class MainViewModel @Inject constructor(
 
     private val _showToast: MutableLiveData<String> = SingleLiveEvent()
     val showToast: LiveData<String> get() = _showToast
+
+    init {
+        serviceHelper.subscribe()
+    }
+
+    override fun onCleared() {
+        Log.d(TAG, "onCleared")
+        super.onCleared()
+        serviceHelper.unsubscribe()
+    }
 
     @UiThread
     fun handleThemeChange(isNightMode: Boolean, key: String) {
@@ -70,6 +83,7 @@ class MainViewModel @Inject constructor(
     ) : ViewModelProvider.Factory by BaseViewModelFactory(provider)
 
     private companion object {
+        private const val TAG = "MainViewModel"
         private const val NIGHT_MODE_KEY = "night_mode"
     }
 }

@@ -92,6 +92,7 @@ class MediaSessionCallback(
 
         if (player.playWhenReady) {
             player.playWhenReady = false
+            player.release()
         }
         onSessionUpdate(emptyMetadata, false, PlaybackStateCompat.STATE_STOPPED)
 

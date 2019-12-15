@@ -15,13 +15,11 @@ import com.epam.listento.model.toMetadata
 import com.epam.listento.repository.global.AlbumsRepository
 import com.epam.listento.repository.global.MusicRepository
 import com.epam.listento.utils.AppDispatchers
-import com.epam.listento.utils.ContextProvider
 import com.epam.listento.utils.SingleLiveEvent
 import kotlinx.coroutines.launch
 
 class AlbumViewModel(
     val serviceHelper: ServiceHelper,
-    private val contextProvider: ContextProvider,
     private val dispatchers: AppDispatchers,
     private val musicRepo: MusicRepository,
     val title: String,

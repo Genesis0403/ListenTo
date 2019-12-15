@@ -13,7 +13,6 @@ import com.squareup.inject.assisted.AssistedInject
 @Suppress("UNCHECKED_CAST")
 class AlbumViewModelFactory @AssistedInject constructor(
     private val serviceHelper: ServiceHelper,
-    private val contextProvider: ContextProvider,
     private val dispatchers: AppDispatchers,
     private val musicRepo: MusicRepository,
     private val albumsRepo: AlbumsRepository,
@@ -24,7 +23,6 @@ class AlbumViewModelFactory @AssistedInject constructor(
     override fun <T : ViewModel?> create(modelClass: Class<T>): T {
         return AlbumViewModel(
             serviceHelper,
-            contextProvider,
             dispatchers,
             musicRepo,
             title,

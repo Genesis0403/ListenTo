@@ -6,7 +6,7 @@ import android.view.View
 import androidx.appcompat.widget.Toolbar
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.viewModels
+import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.LinearLayoutManager
@@ -16,7 +16,6 @@ import com.epam.listento.model.CustomAlbum
 import com.epam.listento.model.Track
 import com.epam.listento.model.player.PlaybackState
 import com.epam.listento.ui.TracksAdapter
-import com.epam.listento.ui.dialogs.AlbumCreationDialog
 import com.epam.listento.ui.dialogs.TrackDialogDirections
 import kotlinx.android.synthetic.main.cache_fragment.albumsRecyclerView
 import kotlinx.android.synthetic.main.cache_fragment.albumsSection
@@ -29,11 +28,13 @@ class CacheFragment :
     TracksAdapter.OnClickListener,
     AlbumsAdapter.OnClickListener {
 
-    private val cacheViewModel: CacheScreenViewModel by viewModels {
+    private val cacheViewModel: CacheScreenViewModel by activityViewModels {
         cacheFactory
     }
 
-    private val navController by lazy { findNavController() }
+    private val navController by lazy(LazyThreadSafetyMode.NONE) {
+        findNavController()
+    }
 
     private val tracksAdapter = TracksAdapter(this)
     private val albumsAdapter = AlbumsAdapter(this)
@@ -50,7 +51,7 @@ class CacheFragment :
     }
 
     override fun onLongClick(track: Track) {
-        AlbumCreationDialog.newInstance().show(requireActivity().supportFragmentManager, null)
+        navController.navigate(R.id.action_cacheFragmentNav_to_albumCreationActivity2)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -60,7 +61,16 @@ class CacheFragment :
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        initViews()
+        initObservers()
+    }
 
+    override fun onMenuClick(track: Track) {
+        cacheViewModel.handleThreeDotButtonClick(track)
+    }
+
+
+    private fun initViews() {
         requireActivity().findViewById<Toolbar>(R.id.appToolBar)?.apply {
             menu.clear()
             inflateMenu(R.menu.search_toolbar_menu)
@@ -76,12 +86,6 @@ class CacheFragment :
             setHasFixedSize(true)
             adapter = albumsAdapter
         }
-
-        initObservers()
-    }
-
-    override fun onMenuClick(track: Track) {
-        cacheViewModel.handleThreeDotButtonClick(track)
     }
 
     private fun initObservers() {
@@ -104,16 +108,16 @@ class CacheFragment :
                 progressBar.isVisible = false
             })
 
-            serviceHelper.currentPlaying.observe(viewLifecycleOwner, Observer<Int> {
+            currentPlaying.observe(viewLifecycleOwner, Observer<Int> {
                 Log.d(TAG, "Current playing with id: $it")
                 handlePlayerStateChange(it)
             })
 
-            serviceHelper.playbackState.observe(
+            playbackState.observe(
                 viewLifecycleOwner,
                 Observer<PlaybackState> {
                     Log.d(TAG, "Current playback status is: $it")
-                    handlePlayerStateChange(serviceHelper.currentPlaying.value ?: -1)
+                    handlePlayerStateChange(currentPlaying.value ?: -1)
                 }
             )
 
@@ -124,7 +128,7 @@ class CacheFragment :
                         CacheScreenViewModel.Command.ShowPlayerActivity ->
                             navController.navigate(R.id.playerActivity)
                         is CacheScreenViewModel.Command.PlayTrack ->
-                            serviceHelper.transportControls?.play()
+                            transportControls?.play()
                         is CacheScreenViewModel.Command.ShowAlbumActivity -> {
                             val direction =
                                 CacheFragmentDirections.actionCacheFragmentNavToAlbumActivity(

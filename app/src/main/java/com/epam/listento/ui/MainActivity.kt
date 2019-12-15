@@ -2,6 +2,7 @@ package com.epam.listento.ui
 
 import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
@@ -20,11 +21,6 @@ import javax.inject.Inject
 
 class MainActivity : AppCompatActivity(R.layout.activity_main) {
 
-    @Inject
-    lateinit var helper: ServiceHelper
-
-    @Inject
-    lateinit var factory: MainViewModel.Factory
     private val mainViewModel: MainViewModel by viewModels {
         factory
     }
@@ -45,6 +41,9 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         PreferenceManager.getDefaultSharedPreferences(this)
     }
 
+    @Inject
+    lateinit var factory: MainViewModel.Factory
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         App.component.inject(this)
@@ -64,13 +63,12 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
         mainViewModel.showToast.observe(this, Observer<String> {
             Toast.makeText(this, it, Toast.LENGTH_SHORT).show()
         })
-        helper.subscribe()
     }
 
     override fun onDestroy() {
         super.onDestroy()
+        Log.d(TAG, "onDestroy")
         sp.unregisterOnSharedPreferenceChangeListener(sharedPreferencesListener)
-        helper.unsubscribe()
     }
 
     private val sharedPreferencesListener =
@@ -78,4 +76,8 @@ class MainActivity : AppCompatActivity(R.layout.activity_main) {
             val isNightMode = sp.getBoolean(key, false)
             mainViewModel.handleThemeChange(isNightMode, key)
         }
+
+    private companion object {
+        private const val TAG = "MainActivity"
+    }
 }

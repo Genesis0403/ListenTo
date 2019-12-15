@@ -9,6 +9,7 @@ import android.support.v4.media.MediaMetadataCompat
 import android.support.v4.media.session.MediaControllerCompat
 import android.support.v4.media.session.PlaybackStateCompat
 import android.util.Log
+import androidx.annotation.UiThread
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import com.epam.listento.model.PlayerService
@@ -18,6 +19,9 @@ import com.epam.listento.utils.ContextProvider
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * This class is responsible for handling [PlayerService] changes.
+ */
 @Singleton
 class ServiceHelper @Inject constructor(
     private val contextProvider: ContextProvider
@@ -40,11 +44,14 @@ class ServiceHelper @Inject constructor(
 
     private val connection = object : ServiceConnection {
         override fun onServiceDisconnected(name: ComponentName?) {
+            Log.d(TAG, "onServiceDisconnected")
+            controller?.unregisterCallback(callback)
             controller = null
             binder = null
         }
 
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            Log.d(TAG, "onServiceConnected")
             binder = service as PlayerService.PlayerBinder
             binder?.let { binder ->
                 val token = binder.getSessionToken() ?: return
@@ -80,6 +87,7 @@ class ServiceHelper @Inject constructor(
         }
     }
 
+    @UiThread
     fun subscribe() {
         Log.d(TAG, "STARTING SERVICE VIA SERVICE HELPER")
         val context = contextProvider.context()
@@ -90,9 +98,11 @@ class ServiceHelper @Inject constructor(
         )
     }
 
+    @UiThread
     fun unsubscribe() {
+        //TODO first we should unbind from service and only then we can stop foreground
+        Log.d(TAG, "unsubscribe")
         contextProvider.context().unbindService(connection)
-        binder = null
     }
 
     private fun getPlaybackState(state: Int?): PlaybackState {

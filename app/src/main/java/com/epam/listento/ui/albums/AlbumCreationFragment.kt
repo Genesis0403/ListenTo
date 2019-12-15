@@ -1,16 +1,15 @@
-package com.epam.listento.ui.dialogs
+package com.epam.listento.ui.albums
 
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
 import android.provider.MediaStore
-import android.view.LayoutInflater
+import android.util.Log
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.widget.Toolbar
-import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
@@ -22,11 +21,14 @@ import com.epam.listento.App
 import com.epam.listento.R
 import com.epam.listento.model.Track
 import com.epam.listento.ui.cache.CacheScreenViewModel
+import com.epam.listento.ui.dialogs.TracksToAlbumAdapter
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import javax.inject.Inject
 
-class AlbumCreationDialog : DialogFragment(), TracksToAlbumAdapter.OnClickListener {
+class AlbumCreationFragment :
+    Fragment(R.layout.album_creation_fragment),
+    TracksToAlbumAdapter.OnClickListener {
 
     private val cacheViewModel: CacheScreenViewModel by activityViewModels {
         cacheViewModelFactory
@@ -40,15 +42,15 @@ class AlbumCreationDialog : DialogFragment(), TracksToAlbumAdapter.OnClickListen
         TracksToAlbumAdapter(this)
     }
 
-    private val intent = Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
+    private val intent = Intent(Intent.ACTION_OPEN_DOCUMENT, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
 
-    lateinit var toolbar: Toolbar
-    lateinit var albumCover: ImageView
-    lateinit var albumTitleInputLayout: TextInputLayout
-    lateinit var albumArtistInputLayout: TextInputLayout
-    lateinit var albumTitleEditText: TextInputEditText
-    lateinit var albumArtistEditText: TextInputEditText
-    lateinit var tracksRecycler: RecyclerView
+    private lateinit var toolbar: Toolbar
+    private lateinit var albumCover: ImageView
+    private lateinit var albumTitleInputLayout: TextInputLayout
+    private lateinit var albumArtistInputLayout: TextInputLayout
+    private lateinit var albumTitleEditText: TextInputEditText
+    private lateinit var albumArtistEditText: TextInputEditText
+    private lateinit var tracksRecycler: RecyclerView
 
     @Inject
     lateinit var cacheViewModelFactory: CacheScreenViewModel.Factory
@@ -60,15 +62,6 @@ class AlbumCreationDialog : DialogFragment(), TracksToAlbumAdapter.OnClickListen
         super.onCreate(savedInstanceState)
         App.component.inject(this)
         setHasOptionsMenu(true)
-        setStyle(STYLE_NORMAL, R.style.ListenTo_MaterialDialog)
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View? {
-        return inflater.inflate(R.layout.album_creation_dialog, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -77,19 +70,9 @@ class AlbumCreationDialog : DialogFragment(), TracksToAlbumAdapter.OnClickListen
         initObservers()
     }
 
-    override fun onStart() {
-        super.onStart()
-        dialog?.window?.run {
-            setLayout(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.MATCH_PARENT
-            )
-            setWindowAnimations(R.style.AppTheme_SlideAnimation)
-        }
-    }
-
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode == REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            Log.d(TAG, "album cover url ${data?.dataString}")
             albumCreationViewModel.changeCover(data?.dataString)
         }
     }
@@ -114,7 +97,7 @@ class AlbumCreationDialog : DialogFragment(), TracksToAlbumAdapter.OnClickListen
                 albumCreationViewModel.onMenuItemClick(it.itemId)
             }
             setNavigationOnClickListener {
-                dismiss()
+                albumCreationViewModel.onMenuItemClick(android.R.id.home)
             }
         }
 
@@ -136,23 +119,30 @@ class AlbumCreationDialog : DialogFragment(), TracksToAlbumAdapter.OnClickListen
         with(albumCreationViewModel) {
             command.observe(viewLifecycleOwner, Observer<AlbumCreationViewModel.Command> {
                 when (it) {
-                    AlbumCreationViewModel.Command.SaveAlbum -> {
+                    AlbumCreationViewModel.Command.ShowErrorOnQuery -> {
+                        albumArtistInputLayout.error = getString(R.string.wront_album_name)
+                        albumArtistInputLayout.error = getString(R.string.wrong_artist_name)
+                    }
+                    AlbumCreationViewModel.Command.SaveAlbum ->
                         albumCreationViewModel.saveAlbum(
                             albumTitleEditText.text.toString(),
                             albumArtistEditText.text.toString()
                         )
-                    }
-                    AlbumCreationViewModel.Command.ChangeCover -> startActivityForResult(
-                        intent,
-                        REQUEST_CODE
-                    )
-                    AlbumCreationViewModel.Command.CloseDialog -> dismiss()
-                    is AlbumCreationViewModel.Command.ShowToast -> Toast.makeText(
-                        requireContext(),
-                        it.message,
-                        Toast.LENGTH_LONG
-                    ).show()
-                    is AlbumCreationViewModel.Command.LoadImage -> loadImage(it.uri)
+                    AlbumCreationViewModel.Command.ChangeCover ->
+                        startActivityForResult(
+                            intent,
+                            REQUEST_CODE
+                        )
+                    AlbumCreationViewModel.Command.CloseActivity ->
+                        requireActivity().finish()
+                    is AlbumCreationViewModel.Command.ShowToast ->
+                        Toast.makeText(
+                            requireContext(),
+                            it.message,
+                            Toast.LENGTH_LONG
+                        ).show()
+                    is AlbumCreationViewModel.Command.LoadImage ->
+                        loadImage(it.uri)
                 }
             })
         }
@@ -167,8 +157,7 @@ class AlbumCreationDialog : DialogFragment(), TracksToAlbumAdapter.OnClickListen
     }
 
     companion object {
-        private const val TAG = "AlbumCreationDialog"
+        private const val TAG = "AlbumCreationFragment"
         private const val REQUEST_CODE = 404
-        fun newInstance() = AlbumCreationDialog()
     }
 }
